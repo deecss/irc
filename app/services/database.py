@@ -18,17 +18,12 @@ logger = logging.getLogger(__name__)
 class IRCDatabase:
     """Klasa zarządzająca bazą danych dla aplikacji IRC"""
     
-    def __init__(self, db_path: str = None):
-        if db_path is None:
-            # Utwórz folder data jeśli nie istnieje
-            data_dir = Path(__file__).parent.parent.parent / "data"
-            data_dir.mkdir(exist_ok=True)
-            db_path = data_dir / "irc_app.db"
-        
-        self.db_path = str(db_path)
+    def __init__(self, db_path: str = "irc_users.db"):
+        self.db_path = db_path
         self.lock = threading.Lock()
         self._init_database()
-    
+        self.migrate_database()  # Dodajemy migrację
+        
     def _init_database(self):
         """Inicjalizuje bazę danych z tabelami"""
         try:
@@ -107,6 +102,27 @@ class IRCDatabase:
         except Exception as e:
             logger.error(f"Błąd inicjalizacji bazy danych: {e}")
             raise
+    
+    def migrate_database(self):
+        """Migracja bazy danych - dodaje brakujące kolumny"""
+        try:
+            with self.lock:
+                conn = sqlite3.connect(self.db_path)
+                cursor = conn.cursor()
+                
+                # Sprawdź czy kolumna password_hash istnieje
+                cursor.execute("PRAGMA table_info(users)")
+                columns = [col[1] for col in cursor.fetchall()]
+                
+                if 'password_hash' not in columns:
+                    logger.info("Dodaję kolumnę password_hash do tabeli users")
+                    cursor.execute("ALTER TABLE users ADD COLUMN password_hash TEXT")
+                
+                conn.commit()
+                conn.close()
+                logger.info("Migracja bazy danych zakończona")
+        except Exception as e:
+            logger.error(f"Błąd migracji bazy danych: {e}")
     
     def get_user_by_username(self, username: str) -> Optional[Dict]:
         """Pobiera użytkownika po nazwie użytkownika"""

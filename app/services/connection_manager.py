@@ -126,9 +126,9 @@ class IRCConnectionManager:
             logger.error(f"Błąd pobierania profilu użytkownika: {e}")
             return None
     
-    def save_user_profile(self, profile: UserProfile, session_id: str) -> int:
+    def save_user_profile(self, profile: UserProfile, session_id: str, password_hash: str = None) -> int:
         """Zapisuje profil użytkownika do bazy danych"""
-        user_id = db.save_user_profile(profile, session_id)
+        user_id = db.save_user_profile(profile, session_id, password_hash)
         
         with self.lock:
             self.session_users[session_id] = user_id

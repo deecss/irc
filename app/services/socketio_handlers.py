@@ -121,6 +121,11 @@ def register_socketio_handlers(socketio):
                 emit('login_error', {'message': 'Nieprawidłowa nazwa użytkownika lub hasło'})
                 return
             
+            # Sprawdź czy użytkownik ma ustawione hasło
+            if 'password_hash' not in user_data or not user_data['password_hash']:
+                emit('login_error', {'message': 'Konto nie ma ustawionego hasła. Proszę zarejestrować się ponownie.'})
+                return
+            
             # Weryfikuj hasło
             if not verify_password(password, user_data['password_hash']):
                 emit('login_error', {'message': 'Nieprawidłowa nazwa użytkownika lub hasło'})
