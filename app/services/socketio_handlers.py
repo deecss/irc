@@ -141,6 +141,7 @@ def register_socketio_handlers(socketio):
                 preferred_nickname=user_data['preferred_nickname'],
                 preferred_ident=user_data['preferred_ident'],
                 preferred_realname=user_data['preferred_realname'],
+                servers=[],
                 auto_join_channels=json.loads(user_data.get('auto_join_channels', '[]')),
                 preferences=json.loads(user_data.get('preferences', '{}'))
             )
