@@ -5,64 +5,114 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}IRC Web Client{% endblock %}</title>
     
-    <!-- Tailwind CSS via CDN -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Font Awesome dla ikon -->
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Socket.IO -->
-    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
     
     <!-- Custom CSS -->
     <style>
-        .chat-container {
-            scrollbar-width: thin;
-            scrollbar-color: #4B5563 #1F2937;
+        :root {
+            --primary: #667eea;
+            --primary-dark: #5a67d8;
+            --secondary: #764ba2;
+            --accent: #f093fb;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --dark: #0f172a;
+            --dark-lighter: #1e293b;
+            --dark-light: #334155;
         }
         
-        .chat-container::-webkit-scrollbar {
-            width: 8px;
+        body {
+            background: linear-gradient(135deg, var(--dark) 0%, var(--dark-lighter) 50%, var(--secondary) 100%);
+            min-height: 100vh;
         }
         
-        .chat-container::-webkit-scrollbar-track {
-            background: #1F2937;
+        .gradient-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
         }
         
-        .chat-container::-webkit-scrollbar-thumb {
-            background: #4B5563;
-            border-radius: 4px;
+        .gradient-accent {
+            background: linear-gradient(135deg, var(--accent) 0%, var(--primary) 100%);
         }
         
-        .chat-container::-webkit-scrollbar-thumb:hover {
-            background: #6B7280;
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .card {
+            background: rgba(30, 41, 59, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+        }
+        
+        .btn-accent {
+            background: linear-gradient(135deg, var(--accent) 0%, var(--secondary) 100%);
+            box-shadow: 0 4px 15px rgba(240, 147, 251, 0.4);
+        }
+        
+        .btn-accent:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(240, 147, 251, 0.6);
+        }
+        
+        .input-modern {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        
+        .input-modern:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
         }
         
         .notification {
-            animation: slideInRight 0.3s ease-out;
+            animation: slideInRight 0.5s ease;
         }
         
         @keyframes slideInRight {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
         }
         
         .fade-in {
-            animation: fadeIn 0.3s ease-in;
+            animation: fadeIn 0.6s ease;
         }
         
         @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
-        .spin {
+        .floating {
+            animation: floating 3s ease-in-out infinite;
+        }
+        
+        @keyframes floating {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .spinner {
             animation: spin 1s linear infinite;
         }
         
@@ -70,139 +120,177 @@
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
         }
+        
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--dark-lighter);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-dark);
+        }
     </style>
     
-    <!-- Tailwind Config -->
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        irc: {
-                            dark: '#1a1a2e',
-                            darker: '#16213e',
-                            blue: '#0f3460',
-                            accent: '#e94560'
-                        }
-                    }
-                }
-            }
-        }
-    </script>
+    <!-- Socket.IO -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
     
     {% block head %}{% endblock %}
 </head>
-<body class="h-full bg-gray-900 text-gray-100 font-sans">
+<body class="h-full font-sans antialiased">
     <!-- Navigation -->
-    <nav class="bg-irc-dark shadow-lg border-b border-gray-700">
+    <nav class="fixed top-0 left-0 right-0 z-50 glass border-b border-white/20">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo -->
                 <div class="flex items-center">
-                    <!-- Logo -->
-                    <div class="flex-shrink-0 flex items-center">
-                        <i class="fas fa-comments text-irc-accent text-2xl mr-3"></i>
-                        <h1 class="text-xl font-bold text-white">IRC Web Client</h1>
-                    </div>
-                    
-                    <!-- Navigation Links -->
-                    <div class="hidden md:block ml-10">
-                        <div class="flex items-baseline space-x-4">
-                            <a href="{{ url_for('main.index') }}" 
-                               class="hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
-                                <i class="fas fa-home mr-2"></i>Główna
-                            </a>
-                            <a href="{{ url_for('main.chat') }}" 
-                               class="hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
-                                <i class="fas fa-comments mr-2"></i>Chat
-                            </a>
-                            <a href="{{ url_for('main.settings') }}" 
-                               class="hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
-                                <i class="fas fa-cog mr-2"></i>Ustawienia
-                            </a>
+                    <a href="{{ url_for('main.index') }}" class="flex items-center space-x-3">
+                        <div class="w-10 h-10 gradient-primary rounded-xl flex items-center justify-center floating">
+                            <i class="fas fa-comments text-white text-xl"></i>
                         </div>
-                    </div>
+                        <span class="text-white font-bold text-xl">IRC Client</span>
+                    </a>
                 </div>
                 
-                <!-- Connection Status -->
-                <div class="flex items-center space-x-4">
-                    <div id="connection-status" class="flex items-center">
-                        <div class="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
-                        <span class="text-sm text-gray-300">Rozłączony</span>
-                    </div>
-                    
-                    <!-- User Menu -->
-                    <div class="relative">
-                        <button id="user-menu-button" class="flex items-center text-sm rounded-full hover:bg-gray-700 p-2 transition-colors">
-                            <i class="fas fa-user-circle text-xl"></i>
-                        </button>
-                        
-                        <!-- Dropdown menu -->
-                        <div id="user-menu" class="hidden absolute right-0 mt-2 w-48 bg-gray-800 rounded-md shadow-lg py-1 z-50">
-                            <a href="{{ url_for('auth.profile') }}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
-                                <i class="fas fa-user mr-2"></i>Profil
-                            </a>
-                            <a href="{{ url_for('auth.register_form') }}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
-                                <i class="fas fa-user-plus mr-2"></i>Rejestracja
-                            </a>
-                            <a href="{{ url_for('main.about') }}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
-                                <i class="fas fa-info-circle mr-2"></i>O aplikacji
-                            </a>
-                        </div>
-                    </div>
+                <!-- Navigation links -->
+                <div class="hidden md:flex items-center space-x-6">
+                    <a href="{{ url_for('main.index') }}" class="text-white/80 hover:text-white transition-colors">
+                        <i class="fas fa-home mr-2"></i>Główna
+                    </a>
+                    <a href="{{ url_for('main.chat') }}" class="text-white/80 hover:text-white transition-colors">
+                        <i class="fas fa-comments mr-2"></i>Chat
+                    </a>
+                    <a href="{{ url_for('auth.profile') }}" class="text-white/80 hover:text-white transition-colors">
+                        <i class="fas fa-user mr-2"></i>Profil
+                    </a>
+                    <a href="{{ url_for('auth.servers_page') }}" class="text-white/80 hover:text-white transition-colors">
+                        <i class="fas fa-server mr-2"></i>Serwery
+                    </a>
+                </div>
+                
+                <!-- Mobile menu button -->
+                <div class="md:hidden">
+                    <button id="mobile-menu-button" class="text-white p-2">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                </div>
+                
+                <!-- Auth buttons -->
+                <div class="hidden md:flex items-center space-x-4">
+                    <a href="{{ url_for('auth.login_form') }}" class="text-white/80 hover:text-white px-4 py-2 rounded-lg transition-colors">
+                        Zaloguj się
+                    </a>
+                    <a href="{{ url_for('auth.register_form') }}" class="btn-primary text-white px-6 py-2 rounded-lg font-medium">
+                        Załóż konto
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Mobile menu -->
+        <div id="mobile-menu" class="hidden md:hidden glass border-t border-white/20">
+            <div class="px-4 py-3 space-y-3">
+                <a href="{{ url_for('main.index') }}" class="block text-white/80 hover:text-white py-2">
+                    <i class="fas fa-home mr-2"></i>Główna
+                </a>
+                <a href="{{ url_for('main.chat') }}" class="block text-white/80 hover:text-white py-2">
+                    <i class="fas fa-comments mr-2"></i>Chat
+                </a>
+                <a href="{{ url_for('auth.profile') }}" class="block text-white/80 hover:text-white py-2">
+                    <i class="fas fa-user mr-2"></i>Profil
+                </a>
+                <a href="{{ url_for('auth.servers_page') }}" class="block text-white/80 hover:text-white py-2">
+                    <i class="fas fa-server mr-2"></i>Serwery
+                </a>
+                <div class="pt-3 border-t border-white/20">
+                    <a href="{{ url_for('auth.login_form') }}" class="block text-white/80 hover:text-white py-2">
+                        Zaloguj się
+                    </a>
+                    <a href="{{ url_for('auth.register_form') }}" class="block btn-primary text-white px-6 py-2 rounded-lg font-medium mt-2 text-center">
+                        Załóż konto
+                    </a>
                 </div>
             </div>
         </div>
     </nav>
-
-    <!-- Main Content -->
-    <main class="flex-1 overflow-hidden">
+    
+    <!-- Main content -->
+    <main class="pt-16">
         {% block content %}{% endblock %}
     </main>
-
-    <!-- Notifications Container -->
-    <div id="notifications" class="fixed top-20 right-4 z-50 space-y-2 max-w-sm"></div>
-
-    <!-- Loading Overlay -->
-    <div id="loading-overlay" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-gray-800 rounded-lg p-6 flex items-center space-x-3">
-            <i class="fas fa-spinner spin text-irc-accent text-xl"></i>
-            <span class="text-white">Łączenie...</span>
+    
+    <!-- Notifications container -->
+    <div id="notifications" class="fixed top-20 right-4 space-y-4 z-50">
+        <!-- Notifications will be added here -->
+    </div>
+    
+    <!-- Loading overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden">
+        <div class="flex items-center justify-center h-full">
+            <div class="card rounded-2xl p-8 text-center">
+                <div class="spinner w-12 h-12 border-4 border-white/20 border-t-white rounded-full mx-auto mb-4"></div>
+                <p class="text-white text-lg">Ładowanie...</p>
+            </div>
         </div>
     </div>
-
-    <!-- Base JavaScript -->
+    
+    <!-- Global JavaScript -->
     <script>
-        // Global variables
-        let socket = null;
+        // Initialize Socket.IO
+        const socket = io();
         let currentUser = null;
         let connections = [];
-        let currentConnection = null;
         
-        // Utility functions
+        // Mobile menu toggle
+        document.getElementById('mobile-menu-button').addEventListener('click', function() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        });
+        
+        // Loading functions
+        function showLoading(message = 'Ładowanie...') {
+            const overlay = document.getElementById('loading-overlay');
+            const text = overlay.querySelector('p');
+            text.textContent = message;
+            overlay.classList.remove('hidden');
+        }
+        
+        function hideLoading() {
+            document.getElementById('loading-overlay').classList.add('hidden');
+        }
+        
+        // Notification system
         function showNotification(message, type = 'info', duration = 5000) {
             const container = document.getElementById('notifications');
             const notification = document.createElement('div');
             
-            const bgColor = {
-                'success': 'bg-green-600',
-                'error': 'bg-red-600',
-                'warning': 'bg-yellow-600',
-                'info': 'bg-blue-600'
-            }[type] || 'bg-blue-600';
+            const colors = {
+                success: 'bg-green-600',
+                error: 'bg-red-600',
+                warning: 'bg-yellow-600',
+                info: 'bg-blue-600'
+            };
             
-            const icon = {
-                'success': 'fa-check-circle',
-                'error': 'fa-exclamation-circle',
-                'warning': 'fa-exclamation-triangle',
-                'info': 'fa-info-circle'
-            }[type] || 'fa-info-circle';
+            const icons = {
+                success: 'fa-check-circle',
+                error: 'fa-exclamation-circle',
+                warning: 'fa-exclamation-triangle',
+                info: 'fa-info-circle'
+            };
             
-            notification.className = `notification ${bgColor} text-white px-4 py-3 rounded-lg shadow-lg flex items-center space-x-3`;
+            notification.className = `notification card rounded-xl p-4 ${colors[type]} text-white flex items-center space-x-3 max-w-md`;
             notification.innerHTML = `
-                <i class="fas ${icon}"></i>
+                <i class="fas ${icons[type]} text-xl"></i>
                 <span class="flex-1">${message}</span>
-                <button onclick="this.parentElement.remove()" class="text-white hover:text-gray-300">
+                <button onclick="this.parentElement.remove()" class="text-white/80 hover:text-white">
                     <i class="fas fa-times"></i>
                 </button>
             `;
@@ -210,108 +298,68 @@
             container.appendChild(notification);
             
             // Auto remove
-            if (duration > 0) {
-                setTimeout(() => {
-                    if (notification.parentElement) {
-                        notification.remove();
-                    }
-                }, duration);
-            }
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, duration);
         }
         
-        function showLoading(show = true) {
-            const overlay = document.getElementById('loading-overlay');
-            overlay.classList.toggle('hidden', !show);
+        // Connection status
+        function updateConnectionStatus(connected, serverName = '') {
+            // Update UI based on connection status
+            const statusElements = document.querySelectorAll('.connection-status');
+            statusElements.forEach(el => {
+                if (connected) {
+                    el.textContent = serverName ? `Połączony z ${serverName}` : 'Połączony';
+                    el.className = 'connection-status text-green-400';
+                } else {
+                    el.textContent = 'Rozłączony';
+                    el.className = 'connection-status text-red-400';
+                }
+            });
         }
         
-        function updateConnectionStatus(connected = false, serverName = '') {
-            const statusEl = document.getElementById('connection-status');
-            const dot = statusEl.querySelector('div');
-            const text = statusEl.querySelector('span');
-            
-            if (connected) {
-                dot.className = 'w-3 h-3 bg-green-500 rounded-full mr-2';
-                text.textContent = `Połączony: ${serverName}`;
-            } else {
-                dot.className = 'w-3 h-3 bg-red-500 rounded-full mr-2';
-                text.textContent = 'Rozłączony';
-            }
-        }
-        
-        // User menu toggle
-        document.getElementById('user-menu-button').addEventListener('click', function() {
-            const menu = document.getElementById('user-menu');
-            menu.classList.toggle('hidden');
+        // Socket event handlers
+        socket.on('connect', function() {
+            console.log('Połączono z serwerem');
+            showNotification('Połączono z serwerem', 'success');
         });
         
-        // Close user menu when clicking outside
-        document.addEventListener('click', function(event) {
-            const button = document.getElementById('user-menu-button');
-            const menu = document.getElementById('user-menu');
-            
-            if (!button.contains(event.target) && !menu.contains(event.target)) {
-                menu.classList.add('hidden');
+        socket.on('disconnect', function() {
+            console.log('Rozłączono z serwerem');
+            showNotification('Rozłączono z serwerem', 'warning');
+            updateConnectionStatus(false);
+        });
+        
+        socket.on('error', function(data) {
+            console.error('Błąd:', data.message);
+            showNotification(data.message, 'error');
+        });
+        
+        socket.on('user_registered', function(data) {
+            if (data.success) {
+                currentUser = data.profile;
+                showNotification('Profil użytkownika zarejestrowany', 'success');
             }
         });
         
-        // Initialize Socket.IO connection
-        function initializeSocket() {
-            socket = io();
-            
-            socket.on('connect', function() {
-                console.log('Połączono z serwerem');
-                showNotification('Połączono z serwerem aplikacji', 'success');
-            });
-            
-            socket.on('disconnect', function() {
-                console.log('Rozłączono z serwerem');
-                showNotification('Rozłączono z serwerem aplikacji', 'error');
-                updateConnectionStatus(false);
-            });
-            
-            socket.on('error', function(data) {
-                console.error('Błąd:', data.message);
-                showNotification(data.message, 'error');
-            });
-            
-            socket.on('user_registered', function(data) {
-                if (data.success) {
-                    currentUser = data.profile;
-                    showNotification('Profil użytkownika zarejestrowany', 'success');
-                }
-            });
-            
-            socket.on('server_connected', function(data) {
-                if (data.success) {
-                    connections.push(data);
-                    currentConnection = data.connection_id;
-                    updateConnectionStatus(true, data.server.name);
-                    showNotification(`Połączono z ${data.server.name}`, 'success');
-                }
-            });
-            
-            socket.on('server_disconnected', function(data) {
-                connections = connections.filter(c => c.connection_id !== data.connection_id);
-                if (currentConnection === data.connection_id) {
-                    currentConnection = connections.length > 0 ? connections[0].connection_id : null;
-                    updateConnectionStatus(connections.length > 0, connections.length > 0 ? connections[0].server.name : '');
-                }
-                showNotification('Rozłączono z serwerem IRC', 'warning');
-            });
-            
-            socket.on('irc_message', function(data) {
-                handleIRCMessage(data);
-            });
-        }
+        socket.on('server_connected', function(data) {
+            if (data.success) {
+                connections.push(data);
+                updateConnectionStatus(true, data.server.name);
+                showNotification(`Połączono z ${data.server.name}`, 'success');
+            }
+        });
         
-        function handleIRCMessage(data) {
-            // This will be overridden in specific pages
-            console.log('IRC Message:', data);
-        }
+        socket.on('server_disconnected', function(data) {
+            connections = connections.filter(conn => conn.connection_id !== data.connection_id);
+            showNotification('Rozłączono z serwera', 'info');
+        });
         
-        // Initialize on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeSocket();
+        // Auto-hide loading on page load
+        window.addEventListener('load', function() {
+            hideLoading();
         });
     </script>
     

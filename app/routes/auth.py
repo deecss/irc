@@ -1,5 +1,22 @@
 from flask import Blueprint, render_template, request, jsonify, session, redirect, url_for
 import re
+import hashlib
+import secrets
+
+def hash_password(password: str) -> str:
+    """Hashuje hasło z solą"""
+    salt = secrets.token_hex(16)
+    password_hash = hashlib.sha256((password + salt).encode()).hexdigest()
+    return f"{salt}:{password_hash}"
+
+def verify_password(password: str, stored_hash: str) -> bool:
+    """Weryfikuje hasło"""
+    try:
+        salt, password_hash = stored_hash.split(':')
+        computed_hash = hashlib.sha256((password + salt).encode()).hexdigest()
+        return computed_hash == password_hash
+    except:
+        return False
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -174,16 +191,17 @@ def get_default_profile():
 
 @auth_bp.route('/api/login', methods=['POST'])
 def login_user():
-    """Loguje użytkownika po nazwie użytkownika"""
+    """Loguje użytkownika po nazwie użytkownika i haśle"""
     data = request.get_json()
     
-    if not data or not data.get('username'):
+    if not data or not data.get('username') or not data.get('password'):
         return jsonify({
             'success': False,
-            'message': 'Nazwa użytkownika jest wymagana'
+            'message': 'Nazwa użytkownika i hasło są wymagane'
         }), 400
     
     username = data['username'].strip()
+    password = data['password']
     
     # Import tutaj aby uniknąć circular imports
     from app.services.database import db
@@ -193,12 +211,19 @@ def login_user():
     if not user_data:
         return jsonify({
             'success': False,
-            'message': 'Użytkownik nie znaleziony'
-        }), 404
+            'message': 'Nieprawidłowa nazwa użytkownika lub hasło'
+        }), 401
+    
+    # Weryfikuj hasło
+    if not verify_password(password, user_data['password_hash']):
+        return jsonify({
+            'success': False,
+            'message': 'Nieprawidłowa nazwa użytkownika lub hasło'
+        }), 401
     
     return jsonify({
         'success': True,
-        'message': 'Użytkownik znaleziony',
+        'message': 'Zalogowano pomyślnie',
         'user': {
             'username': user_data['username'],
             'email': user_data['email'],

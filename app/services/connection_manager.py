@@ -66,42 +66,65 @@ class IRCConnectionManager:
     
     def get_user_profile_by_session(self, session_id: str) -> Optional[UserProfile]:
         """Pobiera profil użytkownika na podstawie session_id"""
-        with self.lock:
-            if session_id not in self.session_users:
-                # Spróbuj załadować z bazy danych
-                user_data = db.get_user_by_session(session_id)
-                if user_data:
-                    return self.register_user_session(session_id, user_data['username'])
-                return None
-            
-            user_id = self.session_users[session_id]
-            user_data = db.get_user_by_username(
-                next((k for k, v in self.user_sessions.items() if v == session_id), None)
-            )
-            
-            if not user_data:
-                return None
-            
-            import json
-            auto_join_channels = []
-            preferences = {}
-            
-            if user_data['auto_join_channels']:
-                auto_join_channels = json.loads(user_data['auto_join_channels'])
-            
-            if user_data['preferences']:
-                preferences = json.loads(user_data['preferences'])
-            
-            return UserProfile(
-                username=user_data['username'],
-                email=user_data['email'] or '',
-                preferred_nickname=user_data['preferred_nickname'],
-                preferred_ident=user_data['preferred_ident'],
-                preferred_realname=user_data['preferred_realname'],
-                servers=[],
-                auto_join_channels=auto_join_channels,
-                preferences=preferences
-            )
+        try:
+            with self.lock:
+                if session_id not in self.session_users:
+                    # Spróbuj załadować z bazy danych
+                    user_data = db.get_user_by_session(session_id)
+                    if user_data:
+                        return self.register_user_session(session_id, user_data['username'])
+                    return None
+                
+                user_id = self.session_users[session_id]
+                # Znajdź username dla tego user_id
+                username = None
+                for uid, sid in self.user_sessions.items():
+                    if uid == user_id:
+                        # Pobierz username z bazy
+                        for existing_sid, existing_uid in self.session_users.items():
+                            if existing_uid == user_id:
+                                user_data = db.get_user_by_session(existing_sid)
+                                if user_data:
+                                    username = user_data['username']
+                                    break
+                        break
+                
+                if not username:
+                    return None
+                
+                user_data = db.get_user_by_username(username)
+                if not user_data:
+                    return None
+                
+                import json
+                auto_join_channels = []
+                preferences = {}
+                
+                if user_data['auto_join_channels']:
+                    try:
+                        auto_join_channels = json.loads(user_data['auto_join_channels'])
+                    except:
+                        auto_join_channels = []
+                
+                if user_data['preferences']:
+                    try:
+                        preferences = json.loads(user_data['preferences'])
+                    except:
+                        preferences = {}
+                
+                return UserProfile(
+                    username=user_data['username'],
+                    email=user_data['email'] or '',
+                    preferred_nickname=user_data['preferred_nickname'],
+                    preferred_ident=user_data['preferred_ident'],
+                    preferred_realname=user_data['preferred_realname'],
+                    servers=[],
+                    auto_join_channels=auto_join_channels,
+                    preferences=preferences
+                )
+        except Exception as e:
+            logger.error(f"Błąd pobierania profilu użytkownika: {e}")
+            return None
     
     def save_user_profile(self, profile: UserProfile, session_id: str) -> int:
         """Zapisuje profil użytkownika do bazy danych"""

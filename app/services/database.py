@@ -31,76 +31,82 @@ class IRCDatabase:
     
     def _init_database(self):
         """Inicjalizuje bazę danych z tabelami"""
-        with self.lock:
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-            
-            # Tabela użytkowników
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS users (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    username TEXT UNIQUE NOT NULL,
-                    email TEXT,
-                    preferred_nickname TEXT NOT NULL,
-                    preferred_ident TEXT NOT NULL,
-                    preferred_realname TEXT NOT NULL,
-                    auto_join_channels TEXT,  -- JSON array
-                    preferences TEXT,  -- JSON object
-                    session_id TEXT,  -- Ostatni session ID
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    is_active BOOLEAN DEFAULT 1
-                )
-            ''')
-            
-            # Tabela serwerów IRC użytkownika
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS user_servers (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id INTEGER NOT NULL,
-                    name TEXT NOT NULL,
-                    host TEXT NOT NULL,
-                    port INTEGER NOT NULL,
-                    ssl BOOLEAN DEFAULT 0,
-                    ipv6 BOOLEAN DEFAULT 0,
-                    encoding TEXT DEFAULT 'utf-8',
-                    password TEXT,
-                    auto_connect BOOLEAN DEFAULT 0,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    is_active BOOLEAN DEFAULT 1,
-                    FOREIGN KEY (user_id) REFERENCES users (id)
-                )
-            ''')
-            
-            # Tabela aktywnych połączeń IRC
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS active_connections (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id INTEGER NOT NULL,
-                    server_id INTEGER NOT NULL,
-                    connection_id TEXT UNIQUE NOT NULL,
-                    current_nickname TEXT NOT NULL,
-                    is_connected BOOLEAN DEFAULT 0,
-                    connected_at TIMESTAMP,
-                    last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    channels TEXT,  -- JSON array of joined channels
-                    FOREIGN KEY (user_id) REFERENCES users (id),
-                    FOREIGN KEY (server_id) REFERENCES user_servers (id)
-                )
-            ''')
-            
-            # Tabela konfiguracji aplikacji
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS app_config (
-                    key TEXT PRIMARY KEY,
-                    value TEXT NOT NULL,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            ''')
-            
-            conn.commit()
-            conn.close()
-            logger.info("Baza danych została zainicjalizowana")
+        try:
+            with self.lock:
+                conn = sqlite3.connect(self.db_path)
+                cursor = conn.cursor()
+                
+                # Tabela użytkowników
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS users (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        username TEXT UNIQUE NOT NULL,
+                        email TEXT,
+                        password_hash TEXT NOT NULL,
+                        preferred_nickname TEXT NOT NULL,
+                        preferred_ident TEXT NOT NULL,
+                        preferred_realname TEXT NOT NULL,
+                        auto_join_channels TEXT,  -- JSON array
+                        preferences TEXT,  -- JSON object
+                        session_id TEXT,  -- Ostatni session ID
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        is_active BOOLEAN DEFAULT 1,
+                        last_login TIMESTAMP
+                    )
+                ''')
+                
+                # Tabela serwerów IRC użytkownika
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS user_servers (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id INTEGER NOT NULL,
+                        name TEXT NOT NULL,
+                        host TEXT NOT NULL,
+                        port INTEGER NOT NULL,
+                        ssl BOOLEAN DEFAULT 0,
+                        ipv6 BOOLEAN DEFAULT 0,
+                        encoding TEXT DEFAULT 'utf-8',
+                        password TEXT,
+                        auto_connect BOOLEAN DEFAULT 0,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        is_active BOOLEAN DEFAULT 1,
+                        FOREIGN KEY (user_id) REFERENCES users (id)
+                    )
+                ''')
+                
+                # Tabela aktywnych połączeń IRC
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS active_connections (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id INTEGER NOT NULL,
+                        server_id INTEGER NOT NULL,
+                        connection_id TEXT UNIQUE NOT NULL,
+                        current_nickname TEXT NOT NULL,
+                        is_connected BOOLEAN DEFAULT 0,
+                        connected_at TIMESTAMP,
+                        last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        channels TEXT,  -- JSON array of joined channels
+                        FOREIGN KEY (user_id) REFERENCES users (id),
+                        FOREIGN KEY (server_id) REFERENCES user_servers (id)
+                    )
+                ''')
+                
+                # Tabela konfiguracji aplikacji
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS app_config (
+                        key TEXT PRIMARY KEY,
+                        value TEXT NOT NULL,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                ''')
+                
+                conn.commit()
+                conn.close()
+                logger.info("Baza danych została zainicjalizowana")
+        except Exception as e:
+            logger.error(f"Błąd inicjalizacji bazy danych: {e}")
+            raise
     
     def get_user_by_username(self, username: str) -> Optional[Dict]:
         """Pobiera użytkownika po nazwie użytkownika"""
@@ -138,7 +144,7 @@ class IRCDatabase:
                 return dict(row)
             return None
     
-    def save_user_profile(self, profile: UserProfile, session_id: str = None) -> int:
+    def save_user_profile(self, profile: UserProfile, session_id: str = None, password_hash: str = None) -> int:
         """Zapisuje lub aktualizuje profil użytkownika"""
         with self.lock:
             conn = sqlite3.connect(self.db_path)
@@ -152,7 +158,7 @@ class IRCDatabase:
             existing = cursor.fetchone()
             
             if existing:
-                # Aktualizuj istniejący profil
+                # Aktualizuj istniejący profil (bez zmiany hasła)
                 cursor.execute('''
                     UPDATE users SET 
                         email = ?, preferred_nickname = ?, preferred_ident = ?,
@@ -166,14 +172,17 @@ class IRCDatabase:
                 ))
                 user_id = existing[0]
             else:
-                # Utwórz nowy profil
+                # Utwórz nowy profil - hasło jest wymagane
+                if not password_hash:
+                    raise ValueError("Hasło jest wymagane dla nowych użytkowników")
+                
                 cursor.execute('''
                     INSERT INTO users (
-                        username, email, preferred_nickname, preferred_ident,
+                        username, email, password_hash, preferred_nickname, preferred_ident,
                         preferred_realname, auto_join_channels, preferences, session_id
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (
-                    profile.username, profile.email, profile.preferred_nickname,
+                    profile.username, profile.email, password_hash, profile.preferred_nickname,
                     profile.preferred_ident, profile.preferred_realname,
                     auto_join_channels, preferences, session_id
                 ))
@@ -183,6 +192,39 @@ class IRCDatabase:
             conn.close()
             logger.info(f"Zapisano profil użytkownika {profile.username} (ID: {user_id})")
             return user_id
+    
+    def verify_user_password(self, username: str, password_hash: str) -> bool:
+        """Weryfikuje hasło użytkownika"""
+        with self.lock:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                SELECT password_hash FROM users WHERE username = ? AND is_active = 1
+            ''', (username,))
+            
+            row = cursor.fetchone()
+            conn.close()
+            
+            if row and row[0] == password_hash:
+                # Aktualizuj czas ostatniego logowania
+                self.update_last_login(username)
+                return True
+            return False
+    
+    def update_last_login(self, username: str):
+        """Aktualizuje czas ostatniego logowania"""
+        with self.lock:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                UPDATE users SET last_login = CURRENT_TIMESTAMP
+                WHERE username = ?
+            ''', (username,))
+            
+            conn.commit()
+            conn.close()
     
     def get_user_servers(self, user_id: int) -> List[Dict]:
         """Pobiera listę serwerów użytkownika"""
@@ -368,5 +410,15 @@ class IRCDatabase:
             conn.commit()
             conn.close()
 
-# Globalna instancja bazy danych
-db = IRCDatabase()
+# Globalna instancja bazy danych - inicjalizacja lazy
+_db_instance = None
+
+def get_db():
+    """Zwraca instancję bazy danych (lazy initialization)"""
+    global _db_instance
+    if _db_instance is None:
+        _db_instance = IRCDatabase()
+    return _db_instance
+
+# Kompatybilność wsteczna
+db = get_db()

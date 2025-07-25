@@ -1,3 +1,7 @@
+# Najpierw monkey patch dla eventlet - MUSI być przed wszystkimi importami
+import eventlet
+eventlet.monkey_patch()
+
 import os
 import sys
 from pathlib import Path
@@ -8,10 +12,6 @@ sys.path.insert(0, str(project_root))
 
 from flask import Flask
 from flask_socketio import SocketIO
-import eventlet
-
-# Patch dla eventlet
-eventlet.monkey_patch()
 
 def create_app():
     app = Flask(__name__, 
