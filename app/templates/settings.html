@@ -1,0 +1,604 @@
+{% extends "base.html" %}
+
+{% block title %}Ustawienia - IRC Web Client{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-irc-dark via-irc-darker to-irc-blue py-8">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-8">
+            <h2 class="text-3xl font-extrabold text-white">Ustawienia</h2>
+            <p class="mt-2 text-sm text-gray-400">
+                Personalizuj swoje doświadczenie IRC
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Settings Navigation -->
+            <div class="lg:col-span-1">
+                <nav class="bg-gray-800 rounded-lg p-4">
+                    <h3 class="text-lg font-medium text-white mb-4">Kategorie</h3>
+                    <ul class="space-y-2">
+                        <li>
+                            <button onclick="showSettingsSection('appearance')" 
+                                    class="w-full text-left px-3 py-2 rounded-md text-gray-300 hover:bg-gray-700 hover:text-white transition-colors settings-nav-btn"
+                                    data-section="appearance">
+                                <i class="fas fa-palette mr-2"></i>
+                                Wygląd
+                            </button>
+                        </li>
+                        <li>
+                            <button onclick="showSettingsSection('notifications')" 
+                                    class="w-full text-left px-3 py-2 rounded-md text-gray-300 hover:bg-gray-700 hover:text-white transition-colors settings-nav-btn"
+                                    data-section="notifications">
+                                <i class="fas fa-bell mr-2"></i>
+                                Powiadomienia
+                            </button>
+                        </li>
+                        <li>
+                            <button onclick="showSettingsSection('connection')" 
+                                    class="w-full text-left px-3 py-2 rounded-md text-gray-300 hover:bg-gray-700 hover:text-white transition-colors settings-nav-btn"
+                                    data-section="connection">
+                                <i class="fas fa-network-wired mr-2"></i>
+                                Połączenie
+                            </button>
+                        </li>
+                        <li>
+                            <button onclick="showSettingsSection('channels')" 
+                                    class="w-full text-left px-3 py-2 rounded-md text-gray-300 hover:bg-gray-700 hover:text-white transition-colors settings-nav-btn"
+                                    data-section="channels">
+                                <i class="fas fa-hashtag mr-2"></i>
+                                Kanały
+                            </button>
+                        </li>
+                        <li>
+                            <button onclick="showSettingsSection('advanced')" 
+                                    class="w-full text-left px-3 py-2 rounded-md text-gray-300 hover:bg-gray-700 hover:text-white transition-colors settings-nav-btn"
+                                    data-section="advanced">
+                                <i class="fas fa-cogs mr-2"></i>
+                                Zaawansowane
+                            </button>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+
+            <!-- Settings Content -->
+            <div class="lg:col-span-2">
+                <!-- Appearance Settings -->
+                <div id="appearance-settings" class="settings-section bg-gray-800 rounded-lg p-6">
+                    <h3 class="text-xl font-semibold text-white mb-6 flex items-center">
+                        <i class="fas fa-palette mr-3 text-irc-accent"></i>
+                        Wygląd
+                    </h3>
+                    
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Motyw</label>
+                            <select id="theme-select" class="w-full bg-gray-700 border-gray-600 rounded-md text-white">
+                                <option value="dark">Ciemny</option>
+                                <option value="light">Jasny</option>
+                                <option value="auto">Automatyczny</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Rozmiar czcionki</label>
+                            <select id="font-size-select" class="w-full bg-gray-700 border-gray-600 rounded-md text-white">
+                                <option value="small">Mała (12px)</option>
+                                <option value="medium">Średnia (14px)</option>
+                                <option value="large">Duża (16px)</option>
+                                <option value="extra-large">Bardzo duża (18px)</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Format znacznika czasu</label>
+                            <select id="timestamp-format" class="w-full bg-gray-700 border-gray-600 rounded-md text-white">
+                                <option value="HH:MM">HH:MM</option>
+                                <option value="HH:MM:SS">HH:MM:SS</option>
+                                <option value="DD/MM HH:MM">DD/MM HH:MM</option>
+                                <option value="relative">Względny</option>
+                            </select>
+                        </div>
+                        
+                        <div class="flex items-center">
+                            <input type="checkbox" id="show-join-part" class="rounded border-gray-600 text-irc-accent">
+                            <label for="show-join-part" class="ml-2 text-sm text-gray-300">
+                                Pokazuj wiadomości o dołączaniu/opuszczaniu
+                            </label>
+                        </div>
+                        
+                        <div class="flex items-center">
+                            <input type="checkbox" id="compact-mode" class="rounded border-gray-600 text-irc-accent">
+                            <label for="compact-mode" class="ml-2 text-sm text-gray-300">
+                                Tryb kompaktowy
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notifications Settings -->
+                <div id="notifications-settings" class="settings-section hidden bg-gray-800 rounded-lg p-6">
+                    <h3 class="text-xl font-semibold text-white mb-6 flex items-center">
+                        <i class="fas fa-bell mr-3 text-irc-accent"></i>
+                        Powiadomienia
+                    </h3>
+                    
+                    <div class="space-y-6">
+                        <div class="flex items-center">
+                            <input type="checkbox" id="desktop-notifications" class="rounded border-gray-600 text-irc-accent">
+                            <label for="desktop-notifications" class="ml-2 text-sm text-gray-300">
+                                Powiadomienia systemowe
+                            </label>
+                        </div>
+                        
+                        <div class="flex items-center">
+                            <input type="checkbox" id="sound-notifications" class="rounded border-gray-600 text-irc-accent">
+                            <label for="sound-notifications" class="ml-2 text-sm text-gray-300">
+                                Dźwięki powiadomień
+                            </label>
+                        </div>
+                        
+                        <div class="flex items-center">
+                            <input type="checkbox" id="mention-notifications" class="rounded border-gray-600 text-irc-accent">
+                            <label for="mention-notifications" class="ml-2 text-sm text-gray-300">
+                                Powiadomienia o wspomnieniu nicka
+                            </label>
+                        </div>
+                        
+                        <div class="flex items-center">
+                            <input type="checkbox" id="pm-notifications" class="rounded border-gray-600 text-irc-accent">
+                            <label for="pm-notifications" class="ml-2 text-sm text-gray-300">
+                                Powiadomienia o prywatnych wiadomościach
+                            </label>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                Słowa kluczowe (powiadomienia)
+                            </label>
+                            <input type="text" id="highlight-keywords" 
+                                   placeholder="słowo1, słowo2, słowo3"
+                                   class="w-full bg-gray-700 border-gray-600 rounded-md text-white">
+                            <p class="mt-1 text-xs text-gray-400">
+                                Oddziel słowa przecinkami
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Connection Settings -->
+                <div id="connection-settings" class="settings-section hidden bg-gray-800 rounded-lg p-6">
+                    <h3 class="text-xl font-semibold text-white mb-6 flex items-center">
+                        <i class="fas fa-network-wired mr-3 text-irc-accent"></i>
+                        Połączenie
+                    </h3>
+                    
+                    <div class="space-y-6">
+                        <div class="flex items-center">
+                            <input type="checkbox" id="auto-reconnect" class="rounded border-gray-600 text-irc-accent">
+                            <label for="auto-reconnect" class="ml-2 text-sm text-gray-300">
+                                Automatyczne łączenie po rozłączeniu
+                            </label>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                Timeout połączenia (sekundy)
+                            </label>
+                            <input type="number" id="connection-timeout" min="5" max="60" value="30"
+                                   class="w-full bg-gray-700 border-gray-600 rounded-md text-white">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                Preferowany protokół
+                            </label>
+                            <select id="preferred-protocol" class="w-full bg-gray-700 border-gray-600 rounded-md text-white">
+                                <option value="ipv4">IPv4</option>
+                                <option value="ipv6">IPv6</option>
+                                <option value="dual">Dual Stack (IPv4 + IPv6)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="flex items-center">
+                            <input type="checkbox" id="prefer-ssl" class="rounded border-gray-600 text-irc-accent">
+                            <label for="prefer-ssl" class="ml-2 text-sm text-gray-300">
+                                Preferuj połączenia SSL/TLS
+                            </label>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                Kodowanie znaków
+                            </label>
+                            <select id="character-encoding" class="w-full bg-gray-700 border-gray-600 rounded-md text-white">
+                                <option value="utf-8">UTF-8</option>
+                                <option value="iso-8859-2">ISO-8859-2 (Central European)</option>
+                                <option value="windows-1250">Windows-1250</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Channels Settings -->
+                <div id="channels-settings" class="settings-section hidden bg-gray-800 rounded-lg p-6">
+                    <h3 class="text-xl font-semibold text-white mb-6 flex items-center">
+                        <i class="fas fa-hashtag mr-3 text-irc-accent"></i>
+                        Kanały
+                    </h3>
+                    
+                    <div class="space-y-6">
+                        <div class="flex items-center">
+                            <input type="checkbox" id="auto-join-channels" class="rounded border-gray-600 text-irc-accent">
+                            <label for="auto-join-channels" class="ml-2 text-sm text-gray-300">
+                                Automatycznie dołączaj do zapisanych kanałów
+                            </label>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                Domyślne kanały auto-join
+                            </label>
+                            <div id="auto-join-list" class="space-y-2">
+                                <!-- Auto-join channels will be listed here -->
+                            </div>
+                            <button id="add-auto-join" 
+                                    class="mt-2 bg-irc-accent hover:bg-red-600 text-white text-sm px-3 py-1 rounded transition-colors">
+                                <i class="fas fa-plus mr-1"></i>
+                                Dodaj kanał
+                            </button>
+                        </div>
+                        
+                        <div class="flex items-center">
+                            <input type="checkbox" id="rejoin-on-kick" class="rounded border-gray-600 text-irc-accent">
+                            <label for="rejoin-on-kick" class="ml-2 text-sm text-gray-300">
+                                Automatycznie dołączaj ponownie po kick
+                            </label>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                Maksymalna liczba linii historii na kanał
+                            </label>
+                            <input type="number" id="max-history-lines" min="100" max="10000" value="1000"
+                                   class="w-full bg-gray-700 border-gray-600 rounded-md text-white">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Advanced Settings -->
+                <div id="advanced-settings" class="settings-section hidden bg-gray-800 rounded-lg p-6">
+                    <h3 class="text-xl font-semibold text-white mb-6 flex items-center">
+                        <i class="fas fa-cogs mr-3 text-irc-accent"></i>
+                        Zaawansowane
+                    </h3>
+                    
+                    <div class="space-y-6">
+                        <div class="flex items-center">
+                            <input type="checkbox" id="debug-mode" class="rounded border-gray-600 text-irc-accent">
+                            <label for="debug-mode" class="ml-2 text-sm text-gray-300">
+                                Tryb debugowania (więcej logów w konsoli)
+                            </label>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                Język interfejsu
+                            </label>
+                            <select id="interface-language" class="w-full bg-gray-700 border-gray-600 rounded-md text-white">
+                                <option value="pl">Polski</option>
+                                <option value="en">English</option>
+                            </select>
+                        </div>
+                        
+                        <div class="border-t border-gray-700 pt-6">
+                            <h4 class="text-lg font-medium text-white mb-4">Zarządzanie danymi</h4>
+                            
+                            <div class="space-y-3">
+                                <button id="export-settings" 
+                                        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors">
+                                    <i class="fas fa-download mr-2"></i>
+                                    Eksportuj ustawienia
+                                </button>
+                                
+                                <button id="import-settings" 
+                                        class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md transition-colors">
+                                    <i class="fas fa-upload mr-2"></i>
+                                    Importuj ustawienia
+                                </button>
+                                
+                                <button id="reset-settings" 
+                                        class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md transition-colors">
+                                    <i class="fas fa-undo mr-2"></i>
+                                    Przywróć domyślne
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Save Button -->
+                <div class="mt-8 flex justify-end space-x-3">
+                    <a href="{{ url_for('main.chat') }}" 
+                       class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-md transition-colors">
+                        Anuluj
+                    </a>
+                    <button id="save-settings" 
+                            class="bg-irc-accent hover:bg-red-600 text-white px-6 py-2 rounded-md transition-colors">
+                        <i class="fas fa-save mr-2"></i>
+                        Zapisz ustawienia
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- File input for import (hidden) -->
+<input type="file" id="import-file-input" accept=".json" class="hidden">
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let currentSettings = {};
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        loadSettings();
+        setupEventListeners();
+        showSettingsSection('appearance'); // Show default section
+    });
+    
+    function setupEventListeners() {
+        // Save settings
+        document.getElementById('save-settings').addEventListener('click', saveSettings);
+        
+        // Export/Import/Reset
+        document.getElementById('export-settings').addEventListener('click', exportSettings);
+        document.getElementById('import-settings').addEventListener('click', () => {
+            document.getElementById('import-file-input').click();
+        });
+        document.getElementById('import-file-input').addEventListener('change', importSettings);
+        document.getElementById('reset-settings').addEventListener('click', resetSettings);
+        
+        // Auto-join channels management
+        document.getElementById('add-auto-join').addEventListener('click', addAutoJoinChannel);
+    }
+    
+    function showSettingsSection(sectionName) {
+        // Hide all sections
+        document.querySelectorAll('.settings-section').forEach(section => {
+            section.classList.add('hidden');
+        });
+        
+        // Remove active state from nav buttons
+        document.querySelectorAll('.settings-nav-btn').forEach(btn => {
+            btn.classList.remove('bg-irc-accent', 'text-white');
+            btn.classList.add('text-gray-300');
+        });
+        
+        // Show selected section
+        document.getElementById(`${sectionName}-settings`).classList.remove('hidden');
+        
+        // Add active state to nav button
+        const navBtn = document.querySelector(`[data-section="${sectionName}"]`);
+        navBtn.classList.add('bg-irc-accent', 'text-white');
+        navBtn.classList.remove('text-gray-300');
+    }
+    
+    function loadSettings() {
+        // Load settings from localStorage or set defaults
+        const defaultSettings = {
+            theme: 'dark',
+            fontSize: 'medium',
+            timestampFormat: 'HH:MM:SS',
+            showJoinPart: true,
+            compactMode: false,
+            desktopNotifications: true,
+            soundNotifications: false,
+            mentionNotifications: true,
+            pmNotifications: true,
+            highlightKeywords: '',
+            autoReconnect: true,
+            connectionTimeout: 30,
+            preferredProtocol: 'dual',
+            preferSSL: true,
+            characterEncoding: 'utf-8',
+            autoJoinChannels: true,
+            rejoinOnKick: false,
+            maxHistoryLines: 1000,
+            debugMode: false,
+            interfaceLanguage: 'pl',
+            autoJoinList: ['#lobby', '#help']
+        };
+        
+        const savedSettings = localStorage.getItem('ircClientSettings');
+        currentSettings = savedSettings ? { ...defaultSettings, ...JSON.parse(savedSettings) } : defaultSettings;
+        
+        // Apply settings to form
+        applySettingsToForm();
+    }
+    
+    function applySettingsToForm() {
+        document.getElementById('theme-select').value = currentSettings.theme;
+        document.getElementById('font-size-select').value = currentSettings.fontSize;
+        document.getElementById('timestamp-format').value = currentSettings.timestampFormat;
+        document.getElementById('show-join-part').checked = currentSettings.showJoinPart;
+        document.getElementById('compact-mode').checked = currentSettings.compactMode;
+        
+        document.getElementById('desktop-notifications').checked = currentSettings.desktopNotifications;
+        document.getElementById('sound-notifications').checked = currentSettings.soundNotifications;
+        document.getElementById('mention-notifications').checked = currentSettings.mentionNotifications;
+        document.getElementById('pm-notifications').checked = currentSettings.pmNotifications;
+        document.getElementById('highlight-keywords').value = currentSettings.highlightKeywords;
+        
+        document.getElementById('auto-reconnect').checked = currentSettings.autoReconnect;
+        document.getElementById('connection-timeout').value = currentSettings.connectionTimeout;
+        document.getElementById('preferred-protocol').value = currentSettings.preferredProtocol;
+        document.getElementById('prefer-ssl').checked = currentSettings.preferSSL;
+        document.getElementById('character-encoding').value = currentSettings.characterEncoding;
+        
+        document.getElementById('auto-join-channels').checked = currentSettings.autoJoinChannels;
+        document.getElementById('rejoin-on-kick').checked = currentSettings.rejoinOnKick;
+        document.getElementById('max-history-lines').value = currentSettings.maxHistoryLines;
+        
+        document.getElementById('debug-mode').checked = currentSettings.debugMode;
+        document.getElementById('interface-language').value = currentSettings.interfaceLanguage;
+        
+        // Update auto-join list
+        updateAutoJoinList();
+    }
+    
+    function updateAutoJoinList() {
+        const container = document.getElementById('auto-join-list');
+        container.innerHTML = '';
+        
+        currentSettings.autoJoinList.forEach((channel, index) => {
+            const div = document.createElement('div');
+            div.className = 'flex items-center space-x-2';
+            div.innerHTML = `
+                <input type="text" value="${channel}" 
+                       class="flex-1 bg-gray-700 border-gray-600 rounded text-white text-sm"
+                       onchange="updateAutoJoinChannel(${index}, this.value)">
+                <button onclick="removeAutoJoinChannel(${index})" 
+                        class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-sm transition-colors">
+                    <i class="fas fa-minus"></i>
+                </button>
+            `;
+            container.appendChild(div);
+        });
+    }
+    
+    function addAutoJoinChannel() {
+        currentSettings.autoJoinList.push('#');
+        updateAutoJoinList();
+    }
+    
+    function removeAutoJoinChannel(index) {
+        currentSettings.autoJoinList.splice(index, 1);
+        updateAutoJoinList();
+    }
+    
+    function updateAutoJoinChannel(index, value) {
+        currentSettings.autoJoinList[index] = value;
+    }
+    
+    function saveSettings() {
+        // Collect settings from form
+        const newSettings = {
+            theme: document.getElementById('theme-select').value,
+            fontSize: document.getElementById('font-size-select').value,
+            timestampFormat: document.getElementById('timestamp-format').value,
+            showJoinPart: document.getElementById('show-join-part').checked,
+            compactMode: document.getElementById('compact-mode').checked,
+            
+            desktopNotifications: document.getElementById('desktop-notifications').checked,
+            soundNotifications: document.getElementById('sound-notifications').checked,
+            mentionNotifications: document.getElementById('mention-notifications').checked,
+            pmNotifications: document.getElementById('pm-notifications').checked,
+            highlightKeywords: document.getElementById('highlight-keywords').value,
+            
+            autoReconnect: document.getElementById('auto-reconnect').checked,
+            connectionTimeout: parseInt(document.getElementById('connection-timeout').value),
+            preferredProtocol: document.getElementById('preferred-protocol').value,
+            preferSSL: document.getElementById('prefer-ssl').checked,
+            characterEncoding: document.getElementById('character-encoding').value,
+            
+            autoJoinChannels: document.getElementById('auto-join-channels').checked,
+            rejoinOnKick: document.getElementById('rejoin-on-kick').checked,
+            maxHistoryLines: parseInt(document.getElementById('max-history-lines').value),
+            
+            debugMode: document.getElementById('debug-mode').checked,
+            interfaceLanguage: document.getElementById('interface-language').value,
+            autoJoinList: currentSettings.autoJoinList
+        };
+        
+        // Save to localStorage
+        localStorage.setItem('ircClientSettings', JSON.stringify(newSettings));
+        currentSettings = newSettings;
+        
+        showNotification('Ustawienia zostały zapisane', 'success');
+        
+        // Apply some settings immediately
+        applySettings();
+    }
+    
+    function applySettings() {
+        // Apply theme
+        if (currentSettings.theme === 'light') {
+            document.documentElement.classList.remove('dark');
+        } else {
+            document.documentElement.classList.add('dark');
+        }
+        
+        // Apply font size
+        const fontSize = {
+            'small': '12px',
+            'medium': '14px',
+            'large': '16px',
+            'extra-large': '18px'
+        }[currentSettings.fontSize];
+        
+        document.documentElement.style.setProperty('--chat-font-size', fontSize);
+        
+        // Request notification permission if enabled
+        if (currentSettings.desktopNotifications && 'Notification' in window) {
+            if (Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+        }
+    }
+    
+    function exportSettings() {
+        const dataStr = JSON.stringify(currentSettings, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(dataBlob);
+        link.download = 'irc-client-settings.json';
+        link.click();
+        
+        showNotification('Ustawienia zostały wyeksportowane', 'success');
+    }
+    
+    function importSettings(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const importedSettings = JSON.parse(e.target.result);
+                
+                // Validate and merge with current settings
+                currentSettings = { ...currentSettings, ...importedSettings };
+                
+                // Apply to form
+                applySettingsToForm();
+                
+                showNotification('Ustawienia zostały zaimportowane', 'success');
+            } catch (error) {
+                showNotification('Błąd importu ustawień: nieprawidłowy format pliku', 'error');
+            }
+        };
+        reader.readAsText(file);
+        
+        // Reset file input
+        event.target.value = '';
+    }
+    
+    function resetSettings() {
+        if (confirm('Czy na pewno chcesz przywrócić domyślne ustawienia? Ta operacja nie może zostać cofnięta.')) {
+            localStorage.removeItem('ircClientSettings');
+            loadSettings();
+            showNotification('Ustawienia zostały przywrócone do domyślnych', 'success');
+        }
+    }
+    
+    // Apply settings on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        loadSettings();
+        applySettings();
+    });
+</script>
+{% endblock %}

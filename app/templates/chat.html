@@ -1,0 +1,1065 @@
+{% extends "base.html" %}
+
+{% block title %}IRC Chat - IRC Web Client{% endblock %}
+
+{% block content %}
+<div class="h-screen flex bg-gray-900">
+    <!-- Sidebar -->
+    <div class="w-80 bg-gray-800 border-r border-gray-700 flex flex-col">
+        <!-- Server Connection Panel -->
+        <div class="p-4 border-b border-gray-700">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-lg font-semibold text-white">Połączenia</h3>
+                <button id="add-connection-btn" 
+                        class="bg-irc-accent hover:bg-red-600 text-white p-2 rounded-md transition-colors">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+            
+            <div id="connections-list" class="space-y-2">
+                <!-- Connections will be displayed here -->
+            </div>
+            
+            <!-- Quick Connect Form (initially hidden) -->
+            <div id="quick-connect-form" class="hidden mt-4 p-3 bg-gray-700 rounded-lg">
+                <h4 class="text-sm font-medium text-white mb-3">Szybkie połączenie</h4>
+                <div class="space-y-2">
+                    <select id="server-select" class="w-full bg-gray-600 border-gray-500 rounded text-white text-sm">
+                        <option value="">Wybierz serwer...</option>
+                    </select>
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="flex items-center text-xs text-gray-300">
+                            <input type="checkbox" id="use-ssl" class="mr-1 rounded">
+                            SSL
+                        </label>
+                        <label class="flex items-center text-xs text-gray-300">
+                            <input type="checkbox" id="use-ipv6" class="mr-1 rounded">
+                            IPv6
+                        </label>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button id="connect-btn" class="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs py-1 px-2 rounded transition-colors">
+                            Połącz
+                        </button>
+                        <button id="cancel-connect-btn" class="bg-gray-600 hover:bg-gray-700 text-white text-xs py-1 px-2 rounded transition-colors">
+                            Anuluj
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Channels List -->
+        <div class="flex-1 overflow-y-auto">
+            <div class="p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-sm font-semibold text-gray-300 uppercase tracking-wide">Kanały</h3>
+                    <button id="join-channel-btn" 
+                            class="text-gray-400 hover:text-white transition-colors" 
+                            title="Dołącz do kanału">
+                        <i class="fas fa-plus text-xs"></i>
+                    </button>
+                </div>
+                
+                <div id="channels-list" class="space-y-1">
+                    <!-- Channels will be displayed here -->
+                </div>
+            </div>
+            
+            <!-- Private Messages -->
+            <div class="p-4 border-t border-gray-700">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-sm font-semibold text-gray-300 uppercase tracking-wide">Prywatne</h3>
+                    <button id="new-query-btn" 
+                            class="text-gray-400 hover:text-white transition-colors" 
+                            title="Nowa rozmowa">
+                        <i class="fas fa-plus text-xs"></i>
+                    </button>
+                </div>
+                
+                <div id="queries-list" class="space-y-1">
+                    <!-- Private messages will be displayed here -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- User Info -->
+        <div class="p-4 border-t border-gray-700 bg-gray-800">
+            <div id="user-info" class="flex items-center space-x-2">
+                <div class="w-2 h-2 bg-gray-500 rounded-full"></div>
+                <span class="text-sm text-gray-400">Nie połączony</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Chat Area -->
+    <div class="flex-1 flex flex-col">
+        <!-- Chat Header -->
+        <div class="bg-gray-800 border-b border-gray-700 p-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div id="chat-header-icon" class="text-gray-400">
+                        <i class="fas fa-hashtag"></i>
+                    </div>
+                    <div>
+                        <h2 id="chat-title" class="text-lg font-semibold text-white">
+                            IRC Web Client
+                        </h2>
+                        <p id="chat-subtitle" class="text-sm text-gray-400">
+                            Połącz się z serwerem aby rozpocząć czat
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-2">
+                    <!-- Channel Actions -->
+                    <div id="channel-actions" class="hidden flex items-center space-x-2">
+                        <button id="channel-users-btn" 
+                                class="text-gray-400 hover:text-white transition-colors p-2" 
+                                title="Lista użytkowników">
+                            <i class="fas fa-users"></i>
+                        </button>
+                        <button id="channel-settings-btn" 
+                                class="text-gray-400 hover:text-white transition-colors p-2" 
+                                title="Ustawienia kanału">
+                            <i class="fas fa-cog"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Connection Actions -->
+                    <div class="flex items-center space-x-2">
+                        <button id="disconnect-btn" 
+                                class="hidden bg-red-600 hover:bg-red-700 text-white text-sm px-3 py-1 rounded transition-colors">
+                            Rozłącz
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Messages Area -->
+        <div class="flex-1 flex">
+            <!-- Chat Messages -->
+            <div class="flex-1 flex flex-col">
+                <div id="messages-container" class="flex-1 overflow-y-auto p-4 chat-container">
+                    <div id="messages-list" class="space-y-2">
+                        <!-- Welcome Message -->
+                        <div class="text-center py-8">
+                            <i class="fas fa-comments text-4xl text-gray-600 mb-4"></i>
+                            <h3 class="text-lg font-medium text-gray-400 mb-2">Witaj w IRC Web Client</h3>
+                            <p class="text-gray-500 mb-4">
+                                Aby rozpocząć, utwórz profil użytkownika i połącz się z serwerem IRC.
+                            </p>
+                            <div class="space-x-2">
+                                <a href="{{ url_for('auth.register_form') }}" 
+                                   class="bg-irc-accent hover:bg-red-600 text-white px-4 py-2 rounded-md transition-colors">
+                                    Utwórz profil
+                                </a>
+                                <button id="show-connect-form" 
+                                        class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md transition-colors">
+                                    Połącz z serwerem
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Message Input -->
+                <div class="border-t border-gray-700 p-4">
+                    <form id="message-form" class="flex space-x-2">
+                        <div class="flex-1 relative">
+                            <input type="text" id="message-input" 
+                                   placeholder="Napisz wiadomość... (lub /help aby zobaczyć komendy)"
+                                   disabled
+                                   class="w-full bg-gray-700 border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:border-irc-accent focus:ring-irc-accent disabled:opacity-50">
+                            <div id="typing-indicator" class="hidden absolute bottom-full left-0 mb-1 text-xs text-gray-400">
+                                <i class="fas fa-circle animate-pulse text-xs mr-1"></i>
+                                Ktoś pisze...
+                            </div>
+                        </div>
+                        <button type="submit" id="send-btn" disabled
+                                class="bg-irc-accent hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </form>
+                    
+                    <!-- Command Help (initially hidden) -->
+                    <div id="command-help" class="hidden mt-2 p-3 bg-gray-800 rounded-lg text-sm">
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            <div>
+                                <h4 class="font-semibold text-gray-300 mb-1">Podstawowe</h4>
+                                <div class="space-y-1 text-gray-400">
+                                    <div><code>/join #kanał</code></div>
+                                    <div><code>/part #kanał</code></div>
+                                    <div><code>/nick nowy_nick</code></div>
+                                    <div><code>/msg nick wiadomość</code></div>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-gray-300 mb-1">Kanał</h4>
+                                <div class="space-y-1 text-gray-400">
+                                    <div><code>/topic temat</code></div>
+                                    <div><code>/kick nick</code></div>
+                                    <div><code>/mode +o nick</code></div>
+                                    <div><code>/me akcja</code></div>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-gray-300 mb-1">Info</h4>
+                                <div class="space-y-1 text-gray-400">
+                                    <div><code>/whois nick</code></div>
+                                    <div><code>/list</code></div>
+                                    <div><code>/names</code></div>
+                                    <div><code>/help</code></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Users List (initially hidden) -->
+            <div id="users-panel" class="hidden w-64 border-l border-gray-700 bg-gray-800">
+                <div class="p-4 border-b border-gray-700">
+                    <h3 class="text-sm font-semibold text-white flex items-center">
+                        <i class="fas fa-users mr-2 text-irc-accent"></i>
+                        Użytkownicy (<span id="users-count">0</span>)
+                    </h3>
+                </div>
+                
+                <div class="overflow-y-auto flex-1">
+                    <div id="users-list" class="p-2 space-y-1">
+                        <!-- Users will be displayed here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modals -->
+<!-- Join Channel Modal -->
+<div id="join-channel-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-gray-800 rounded-lg p-6 w-full max-w-md">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-white">Dołącz do kanału</h3>
+            <button id="close-join-modal" class="text-gray-400 hover:text-white">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <form id="join-channel-form">
+            <div class="space-y-4">
+                <div>
+                    <label for="channel-name" class="block text-sm font-medium text-gray-300 mb-1">
+                        Nazwa kanału
+                    </label>
+                    <input type="text" id="channel-name" placeholder="#kanał" required
+                           class="w-full bg-gray-700 border-gray-600 rounded-md text-white placeholder-gray-400 focus:border-irc-accent focus:ring-irc-accent">
+                </div>
+                
+                <div>
+                    <label for="channel-key" class="block text-sm font-medium text-gray-300 mb-1">
+                        Klucz (opcjonalnie)
+                    </label>
+                    <input type="text" id="channel-key" placeholder="hasło"
+                           class="w-full bg-gray-700 border-gray-600 rounded-md text-white placeholder-gray-400 focus:border-irc-accent focus:ring-irc-accent">
+                </div>
+            </div>
+            
+            <div class="flex justify-end space-x-3 mt-6">
+                <button type="button" id="cancel-join" 
+                        class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md transition-colors">
+                    Anuluj
+                </button>
+                <button type="submit" 
+                        class="bg-irc-accent hover:bg-red-600 text-white px-4 py-2 rounded-md transition-colors">
+                    Dołącz
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- New Query Modal -->
+<div id="new-query-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-gray-800 rounded-lg p-6 w-full max-w-md">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-white">Nowa rozmowa prywatna</h3>
+            <button id="close-query-modal" class="text-gray-400 hover:text-white">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <form id="new-query-form">
+            <div>
+                <label for="query-nick" class="block text-sm font-medium text-gray-300 mb-1">
+                    Nickname użytkownika
+                </label>
+                <input type="text" id="query-nick" placeholder="nickname" required
+                       class="w-full bg-gray-700 border-gray-600 rounded-md text-white placeholder-gray-400 focus:border-irc-accent focus:ring-irc-accent">
+            </div>
+            
+            <div class="flex justify-end space-x-3 mt-6">
+                <button type="button" id="cancel-query" 
+                        class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md transition-colors">
+                    Anuluj
+                </button>
+                <button type="submit" 
+                        class="bg-irc-accent hover:bg-red-600 text-white px-4 py-2 rounded-md transition-colors">
+                    Rozpocznij
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Chat state
+    let currentTarget = null; // Current channel or query
+    let messageHistory = {}; // Store messages for each target
+    let userLists = {}; // Store user lists for each channel
+    let availableServers = [];
+    
+    // UI elements
+    const messagesContainer = document.getElementById('messages-container');
+    const messagesList = document.getElementById('messages-list');
+    const messageInput = document.getElementById('message-input');
+    const sendBtn = document.getElementById('send-btn');
+    const chatTitle = document.getElementById('chat-title');
+    const chatSubtitle = document.getElementById('chat-subtitle');
+    const usersPanel = document.getElementById('users-panel');
+    const usersList = document.getElementById('users-list');
+    const usersCount = document.getElementById('users-count');
+    
+    // Initialize chat
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeChat();
+        loadServers();
+        setupEventListeners();
+    });
+    
+    function initializeChat() {
+        // Override base IRC message handler
+        window.handleIRCMessage = function(data) {
+            switch (data.event_type) {
+                case 'message':
+                    handleMessage(data);
+                    break;
+                case 'join':
+                    handleJoin(data);
+                    break;
+                case 'part':
+                    handlePart(data);
+                    break;
+                case 'quit':
+                    handleQuit(data);
+                    break;
+                case 'nick':
+                    handleNick(data);
+                    break;
+                case 'topic':
+                    handleTopic(data);
+                    break;
+                case 'names':
+                    handleNames(data);
+                    break;
+                case 'system':
+                    handleSystemMessage(data);
+                    break;
+                default:
+                    console.log('Nieobsługiwany typ wiadomości:', data);
+            }
+        };
+        
+        // Socket event handlers
+        socket.on('server_connected', function(data) {
+            if (data.success) {
+                updateConnectionsList();
+                enableChat();
+                showNotification(`Połączono z ${data.server.name}`, 'success');
+            }
+        });
+        
+        socket.on('server_disconnected', function(data) {
+            updateConnectionsList();
+            if (connections.length === 0) {
+                disableChat();
+            }
+        });
+    }
+    
+    function setupEventListeners() {
+        // Message form
+        document.getElementById('message-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            sendMessage();
+        });
+        
+        // Show help on /help
+        messageInput.addEventListener('input', function() {
+            const value = this.value.toLowerCase();
+            const helpDiv = document.getElementById('command-help');
+            
+            if (value === '/help' || value.startsWith('/help ')) {
+                helpDiv.classList.remove('hidden');
+            } else {
+                helpDiv.classList.add('hidden');
+            }
+        });
+        
+        // Connection management
+        document.getElementById('add-connection-btn').addEventListener('click', showQuickConnect);
+        document.getElementById('show-connect-form').addEventListener('click', showQuickConnect);
+        document.getElementById('connect-btn').addEventListener('click', connectToServer);
+        document.getElementById('cancel-connect-btn').addEventListener('click', hideQuickConnect);
+        document.getElementById('disconnect-btn').addEventListener('click', disconnectFromServer);
+        
+        // Channel management
+        document.getElementById('join-channel-btn').addEventListener('click', showJoinChannelModal);
+        document.getElementById('close-join-modal').addEventListener('click', hideJoinChannelModal);
+        document.getElementById('cancel-join').addEventListener('click', hideJoinChannelModal);
+        document.getElementById('join-channel-form').addEventListener('submit', joinChannel);
+        
+        // Query management
+        document.getElementById('new-query-btn').addEventListener('click', showNewQueryModal);
+        document.getElementById('close-query-modal').addEventListener('click', hideNewQueryModal);
+        document.getElementById('cancel-query').addEventListener('click', hideNewQueryModal);
+        document.getElementById('new-query-form').addEventListener('submit', startQuery);
+        
+        // Users panel toggle
+        document.getElementById('channel-users-btn').addEventListener('click', toggleUsersPanel);
+    }
+    
+    async function loadServers() {
+        try {
+            const response = await fetch('/api/ircnet_servers');
+            const data = await response.json();
+            
+            if (data.success) {
+                availableServers = data.servers;
+                updateServerSelect();
+            }
+        } catch (error) {
+            console.error('Błąd ładowania serwerów:', error);
+        }
+    }
+    
+    function updateServerSelect() {
+        const select = document.getElementById('server-select');
+        select.innerHTML = '<option value="">Wybierz serwer...</option>';
+        
+        availableServers.forEach(server => {
+            const option = document.createElement('option');
+            option.value = JSON.stringify(server);
+            option.textContent = `${server.name} (${server.country})`;
+            select.appendChild(option);
+        });
+    }
+    
+    function showQuickConnect() {
+        document.getElementById('quick-connect-form').classList.remove('hidden');
+    }
+    
+    function hideQuickConnect() {
+        document.getElementById('quick-connect-form').classList.add('hidden');
+    }
+    
+    function connectToServer() {
+        const serverSelect = document.getElementById('server-select');
+        const useSSL = document.getElementById('use-ssl').checked;
+        const useIPv6 = document.getElementById('use-ipv6').checked;
+        
+        if (!serverSelect.value) {
+            showNotification('Wybierz serwer', 'warning');
+            return;
+        }
+        
+        if (!currentUser) {
+            showNotification('Najpierw utwórz profil użytkownika', 'warning');
+            window.location.href = '{{ url_for("auth.register_form") }}';
+            return;
+        }
+        
+        const serverData = JSON.parse(serverSelect.value);
+        const connectionData = {
+            name: serverData.name,
+            host: serverData.host,
+            port: useSSL ? serverData.ssl_port : serverData.port,
+            ssl: useSSL,
+            ipv6: useIPv6
+        };
+        
+        showLoading(true);
+        socket.emit('connect_to_server', connectionData);
+        
+        // Hide loading after timeout
+        setTimeout(() => showLoading(false), 10000);
+        
+        hideQuickConnect();
+    }
+    
+    function disconnectFromServer() {
+        if (currentConnection) {
+            socket.emit('disconnect_from_server', { connection_id: currentConnection });
+        }
+    }
+    
+    function updateConnectionsList() {
+        const container = document.getElementById('connections-list');
+        container.innerHTML = '';
+        
+        connections.forEach(conn => {
+            const div = document.createElement('div');
+            div.className = 'flex items-center justify-between p-2 bg-gray-700 rounded';
+            div.innerHTML = `
+                <div class="flex items-center space-x-2">
+                    <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span class="text-sm text-white">${conn.server.name}</span>
+                </div>
+                <button onclick="selectConnection('${conn.connection_id}')" 
+                        class="text-xs text-gray-400 hover:text-white">
+                    <i class="fas fa-check"></i>
+                </button>
+            `;
+            container.appendChild(div);
+        });
+    }
+    
+    function selectConnection(connectionId) {
+        currentConnection = connectionId;
+        updateUI();
+    }
+    
+    function enableChat() {
+        messageInput.disabled = false;
+        sendBtn.disabled = false;
+        document.getElementById('disconnect-btn').classList.remove('hidden');
+        
+        // Clear welcome message
+        messagesList.innerHTML = '';
+        
+        updateUI();
+    }
+    
+    function disableChat() {
+        messageInput.disabled = true;
+        sendBtn.disabled = true;
+        document.getElementById('disconnect-btn').classList.add('hidden');
+        currentTarget = null;
+        
+        updateUI();
+    }
+    
+    function updateUI() {
+        if (currentConnection) {
+            const conn = connections.find(c => c.connection_id === currentConnection);
+            if (conn) {
+                chatTitle.textContent = currentTarget || conn.server.name;
+                chatSubtitle.textContent = currentTarget ? 
+                    `Kanał na ${conn.server.name}` : 
+                    `Połączony z ${conn.server.name}`;
+                
+                updateConnectionStatus(true, conn.server.name);
+            }
+        } else {
+            chatTitle.textContent = 'IRC Web Client';
+            chatSubtitle.textContent = 'Nie połączony';
+            updateConnectionStatus(false);
+        }
+        
+        // Update user info
+        const userInfo = document.getElementById('user-info');
+        if (currentUser && currentConnection) {
+            userInfo.innerHTML = `
+                <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span class="text-sm text-white">${currentUser.nickname}</span>
+            `;
+        } else {
+            userInfo.innerHTML = `
+                <div class="w-2 h-2 bg-gray-500 rounded-full"></div>
+                <span class="text-sm text-gray-400">Nie połączony</span>
+            `;
+        }
+        
+        // Show/hide channel actions
+        const channelActions = document.getElementById('channel-actions');
+        if (currentTarget && currentTarget.startsWith('#')) {
+            channelActions.classList.remove('hidden');
+        } else {
+            channelActions.classList.add('hidden');
+        }
+        
+        // Update messages display
+        displayMessages();
+    }
+    
+    function sendMessage() {
+        const message = messageInput.value.trim();
+        if (!message || !currentConnection) return;
+        
+        // Handle commands
+        if (message.startsWith('/')) {
+            handleCommand(message);
+        } else {
+            // Send regular message
+            if (currentTarget) {
+                socket.emit('send_message', {
+                    connection_id: currentConnection,
+                    target: currentTarget,
+                    message: message
+                });
+                
+                messageInput.value = '';
+            } else {
+                showNotification('Wybierz kanał lub rozpocznij rozmowę prywatną', 'warning');
+            }
+        }
+    }
+    
+    function handleCommand(command) {
+        const parts = command.split(' ');
+        const cmd = parts[0].toLowerCase();
+        
+        switch (cmd) {
+            case '/join':
+                if (parts[1]) {
+                    socket.emit('join_channel', {
+                        connection_id: currentConnection,
+                        channel: parts[1],
+                        key: parts[2]
+                    });
+                } else {
+                    showNotification('Użycie: /join #kanał [klucz]', 'warning');
+                }
+                break;
+                
+            case '/part':
+                const channel = parts[1] || currentTarget;
+                if (channel && channel.startsWith('#')) {
+                    socket.emit('part_channel', {
+                        connection_id: currentConnection,
+                        channel: channel,
+                        reason: parts.slice(2).join(' ')
+                    });
+                } else {
+                    showNotification('Użycie: /part [#kanał] [powód]', 'warning');
+                }
+                break;
+                
+            case '/nick':
+                if (parts[1]) {
+                    socket.emit('change_nick', {
+                        connection_id: currentConnection,
+                        new_nick: parts[1]
+                    });
+                } else {
+                    showNotification('Użycie: /nick nowy_nick', 'warning');
+                }
+                break;
+                
+            case '/msg':
+                if (parts[1] && parts[2]) {
+                    socket.emit('send_message', {
+                        connection_id: currentConnection,
+                        target: parts[1],
+                        message: parts.slice(2).join(' ')
+                    });
+                } else {
+                    showNotification('Użycie: /msg nick wiadomość', 'warning');
+                }
+                break;
+                
+            case '/me':
+                if (currentTarget && parts[1]) {
+                    socket.emit('send_action', {
+                        connection_id: currentConnection,
+                        target: currentTarget,
+                        action: parts.slice(1).join(' ')
+                    });
+                } else {
+                    showNotification('Użycie: /me akcja', 'warning');
+                }
+                break;
+                
+            case '/topic':
+                if (currentTarget && currentTarget.startsWith('#')) {
+                    socket.emit('set_topic', {
+                        connection_id: currentConnection,
+                        channel: currentTarget,
+                        topic: parts.slice(1).join(' ')
+                    });
+                } else {
+                    showNotification('Komenda /topic działa tylko na kanałach', 'warning');
+                }
+                break;
+                
+            case '/help':
+                document.getElementById('command-help').classList.toggle('hidden');
+                break;
+                
+            default:
+                showNotification(`Nieznana komenda: ${cmd}`, 'warning');
+        }
+        
+        messageInput.value = '';
+    }
+    
+    function handleMessage(data) {
+        const target = data.target;
+        const msgData = data.data;
+        
+        if (!messageHistory[target]) {
+            messageHistory[target] = [];
+        }
+        
+        messageHistory[target].push(msgData);
+        
+        // Add to channels/queries list if not exists
+        addToSidebar(target);
+        
+        // Display if current target
+        if (target === currentTarget) {
+            displayMessages();
+        }
+        
+        // Scroll to bottom
+        scrollToBottom();
+    }
+    
+    function handleJoin(data) {
+        const joinData = data.data;
+        addToSidebar(joinData.channel);
+        
+        if (joinData.nickname === (currentUser && currentUser.nickname)) {
+            // We joined the channel
+            setCurrentTarget(joinData.channel);
+        }
+    }
+    
+    function handlePart(data) {
+        const partData = data.data;
+        
+        if (partData.nickname === (currentUser && currentUser.nickname)) {
+            // We left the channel
+            removeFromSidebar(partData.channel);
+            if (currentTarget === partData.channel) {
+                setCurrentTarget(null);
+            }
+        }
+    }
+    
+    function handleQuit(data) {
+        // Handle user quit from all channels
+        console.log('User quit:', data.data);
+    }
+    
+    function handleNick(data) {
+        const nickData = data.data;
+        
+        if (nickData.old_nick === (currentUser && currentUser.nickname)) {
+            // Our nick changed
+            currentUser.nickname = nickData.new_nick;
+            updateUI();
+        }
+    }
+    
+    function handleTopic(data) {
+        const topicData = data.data;
+        
+        if (currentTarget === topicData.channel) {
+            chatSubtitle.textContent = topicData.topic || 'Brak tematu';
+        }
+    }
+    
+    function handleNames(data) {
+        const namesData = data.data;
+        userLists[namesData.channel] = namesData;
+        
+        if (currentTarget === namesData.channel) {
+            updateUsersList();
+        }
+    }
+    
+    function handleSystemMessage(data) {
+        showNotification(data.data, 'info');
+    }
+    
+    function addToSidebar(target) {
+        if (target.startsWith('#')) {
+            addChannelToSidebar(target);
+        } else {
+            addQueryToSidebar(target);
+        }
+    }
+    
+    function addChannelToSidebar(channel) {
+        const channelsList = document.getElementById('channels-list');
+        
+        // Check if already exists
+        if (channelsList.querySelector(`[data-target="${channel}"]`)) {
+            return;
+        }
+        
+        const div = document.createElement('div');
+        div.className = 'flex items-center justify-between p-2 rounded hover:bg-gray-700 cursor-pointer';
+        div.setAttribute('data-target', channel);
+        div.innerHTML = `
+            <div class="flex items-center space-x-2 flex-1" onclick="setCurrentTarget('${channel}')">
+                <i class="fas fa-hashtag text-gray-400"></i>
+                <span class="text-sm text-gray-300">${channel.substring(1)}</span>
+            </div>
+            <button onclick="leaveChannel('${channel}')" 
+                    class="text-gray-500 hover:text-red-400 transition-colors">
+                <i class="fas fa-times text-xs"></i>
+            </button>
+        `;
+        
+        channelsList.appendChild(div);
+    }
+    
+    function addQueryToSidebar(nick) {
+        const queriesList = document.getElementById('queries-list');
+        
+        // Check if already exists
+        if (queriesList.querySelector(`[data-target="${nick}"]`)) {
+            return;
+        }
+        
+        const div = document.createElement('div');
+        div.className = 'flex items-center justify-between p-2 rounded hover:bg-gray-700 cursor-pointer';
+        div.setAttribute('data-target', nick);
+        div.innerHTML = `
+            <div class="flex items-center space-x-2 flex-1" onclick="setCurrentTarget('${nick}')">
+                <i class="fas fa-user text-gray-400"></i>
+                <span class="text-sm text-gray-300">${nick}</span>
+            </div>
+            <button onclick="closeQuery('${nick}')" 
+                    class="text-gray-500 hover:text-red-400 transition-colors">
+                <i class="fas fa-times text-xs"></i>
+            </button>
+        `;
+        
+        queriesList.appendChild(div);
+    }
+    
+    function removeFromSidebar(target) {
+        const element = document.querySelector(`[data-target="${target}"]`);
+        if (element) {
+            element.remove();
+        }
+    }
+    
+    function setCurrentTarget(target) {
+        // Update active state
+        document.querySelectorAll('[data-target]').forEach(el => {
+            el.classList.remove('bg-irc-accent');
+        });
+        
+        if (target) {
+            const element = document.querySelector(`[data-target="${target}"]`);
+            if (element) {
+                element.classList.add('bg-irc-accent');
+            }
+        }
+        
+        currentTarget = target;
+        updateUI();
+        
+        // Update users list if channel
+        if (target && target.startsWith('#')) {
+            updateUsersList();
+        } else {
+            usersPanel.classList.add('hidden');
+        }
+    }
+    
+    function leaveChannel(channel) {
+        socket.emit('part_channel', {
+            connection_id: currentConnection,
+            channel: channel
+        });
+    }
+    
+    function closeQuery(nick) {
+        removeFromSidebar(nick);
+        if (currentTarget === nick) {
+            setCurrentTarget(null);
+        }
+        delete messageHistory[nick];
+    }
+    
+    function displayMessages() {
+        if (!currentTarget || !messageHistory[currentTarget]) {
+            return;
+        }
+        
+        messagesList.innerHTML = '';
+        
+        messageHistory[currentTarget].forEach(msg => {
+            const messageEl = createMessageElement(msg);
+            messagesList.appendChild(messageEl);
+        });
+        
+        scrollToBottom();
+    }
+    
+    function createMessageElement(msg) {
+        const div = document.createElement('div');
+        div.className = 'flex space-x-3';
+        
+        const timestamp = new Date(msg.timestamp).toLocaleTimeString('pl-PL', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+        });
+        
+        if (msg.type === 'ACTION') {
+            div.className = 'flex space-x-3 italic text-gray-400';
+            div.innerHTML = `
+                <span class="text-xs text-gray-500 w-16 flex-shrink-0">${timestamp}</span>
+                <span class="flex-1">* ${msg.sender} ${msg.content}</span>
+            `;
+        } else {
+            div.innerHTML = `
+                <span class="text-xs text-gray-500 w-16 flex-shrink-0">${timestamp}</span>
+                <span class="font-medium text-irc-accent w-24 flex-shrink-0 truncate">${msg.sender}</span>
+                <span class="flex-1 text-gray-200">${escapeHtml(msg.content)}</span>
+            `;
+        }
+        
+        return div;
+    }
+    
+    function updateUsersList() {
+        if (!currentTarget || !currentTarget.startsWith('#') || !userLists[currentTarget]) {
+            return;
+        }
+        
+        const users = userLists[currentTarget];
+        usersCount.textContent = users.users.length;
+        
+        usersList.innerHTML = '';
+        
+        // Operators first
+        users.operators.forEach(nick => {
+            if (users.users.includes(nick)) {
+                const div = document.createElement('div');
+                div.className = 'flex items-center space-x-2 p-1 rounded hover:bg-gray-700 cursor-pointer';
+                div.innerHTML = `
+                    <i class="fas fa-crown text-yellow-400 text-xs"></i>
+                    <span class="text-sm text-white">${nick}</span>
+                `;
+                usersList.appendChild(div);
+            }
+        });
+        
+        // Voiced users
+        users.voiced.forEach(nick => {
+            if (users.users.includes(nick) && !users.operators.includes(nick)) {
+                const div = document.createElement('div');
+                div.className = 'flex items-center space-x-2 p-1 rounded hover:bg-gray-700 cursor-pointer';
+                div.innerHTML = `
+                    <i class="fas fa-plus text-green-400 text-xs"></i>
+                    <span class="text-sm text-white">${nick}</span>
+                `;
+                usersList.appendChild(div);
+            }
+        });
+        
+        // Regular users
+        users.users.forEach(nick => {
+            if (!users.operators.includes(nick) && !users.voiced.includes(nick)) {
+                const div = document.createElement('div');
+                div.className = 'flex items-center space-x-2 p-1 rounded hover:bg-gray-700 cursor-pointer';
+                div.innerHTML = `
+                    <i class="fas fa-user text-gray-400 text-xs"></i>
+                    <span class="text-sm text-gray-300">${nick}</span>
+                `;
+                usersList.appendChild(div);
+            }
+        });
+    }
+    
+    function toggleUsersPanel() {
+        usersPanel.classList.toggle('hidden');
+    }
+    
+    function scrollToBottom() {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+    
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    // Modal functions
+    function showJoinChannelModal() {
+        document.getElementById('join-channel-modal').classList.remove('hidden');
+    }
+    
+    function hideJoinChannelModal() {
+        document.getElementById('join-channel-modal').classList.add('hidden');
+        document.getElementById('join-channel-form').reset();
+    }
+    
+    function joinChannel(e) {
+        e.preventDefault();
+        
+        const channelName = document.getElementById('channel-name').value.trim();
+        const channelKey = document.getElementById('channel-key').value.trim();
+        
+        if (!currentConnection) {
+            showNotification('Najpierw połącz się z serwerem', 'warning');
+            return;
+        }
+        
+        let channel = channelName;
+        if (!channel.startsWith('#')) {
+            channel = '#' + channel;
+        }
+        
+        socket.emit('join_channel', {
+            connection_id: currentConnection,
+            channel: channel,
+            key: channelKey || undefined
+        });
+        
+        hideJoinChannelModal();
+    }
+    
+    function showNewQueryModal() {
+        document.getElementById('new-query-modal').classList.remove('hidden');
+    }
+    
+    function hideNewQueryModal() {
+        document.getElementById('new-query-modal').classList.add('hidden');
+        document.getElementById('new-query-form').reset();
+    }
+    
+    function startQuery(e) {
+        e.preventDefault();
+        
+        const nick = document.getElementById('query-nick').value.trim();
+        
+        if (!currentConnection) {
+            showNotification('Najpierw połącz się z serwerem', 'warning');
+            return;
+        }
+        
+        if (!nick) {
+            showNotification('Podaj nickname użytkownika', 'warning');
+            return;
+        }
+        
+        // Add to sidebar and set as current target
+        addQueryToSidebar(nick);
+        setCurrentTarget(nick);
+        
+        hideNewQueryModal();
+    }
+</script>
+{% endblock %}

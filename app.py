@@ -1,4 +1,11 @@
 import os
+import sys
+from pathlib import Path
+
+# Dodaj główny katalog projektu do PYTHONPATH
+project_root = Path(__file__).parent
+sys.path.insert(0, str(project_root))
+
 from flask import Flask
 from flask_socketio import SocketIO
 import eventlet
@@ -7,7 +14,9 @@ import eventlet
 eventlet.monkey_patch()
 
 def create_app():
-    app = Flask(__name__)
+    app = Flask(__name__, 
+                template_folder='app/templates',
+                static_folder='app/static')
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
     app.config['DEBUG'] = True
     
@@ -38,4 +47,4 @@ def create_app():
 app, socketio = create_app()
 
 if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+    socketio.run(app, host='0.0.0.0', port=5667, debug=True)
