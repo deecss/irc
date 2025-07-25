@@ -47,14 +47,19 @@ def register_socketio_handlers(socketio):
     def handle_register_user(data):
         """Rejestruje profil użytkownika"""
         try:
+            from app.routes.auth import hash_password
+            
             session_id = request.sid
             
             # Walidacja danych
-            required_fields = ['username', 'preferred_nickname', 'preferred_ident', 'preferred_realname']
+            required_fields = ['username', 'preferred_nickname', 'preferred_ident', 'preferred_realname', 'password']
             for field in required_fields:
                 if field not in data or not data[field]:
                     emit('error', {'message': f'Pole {field} jest wymagane'})
                     return
+            
+            # Hashuj hasło
+            password_hash = hash_password(data['password'])
             
             # Utworzenie profilu użytkownika
             profile = UserProfile(
@@ -68,8 +73,8 @@ def register_socketio_handlers(socketio):
                 preferences=data.get('preferences', {})
             )
             
-            # Zapisanie profilu do bazy danych i rejestracja sesji
-            user_id = irc_manager.save_user_profile(profile, session_id)
+            # Zapisanie profilu do bazy danych z hasłem
+            user_id = irc_manager.save_user_profile(profile, session_id, password_hash)
             
             emit('user_registered', {
                 'success': True,
