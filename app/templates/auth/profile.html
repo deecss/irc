@@ -208,6 +208,11 @@
                             </button>
                             
                             <div class="space-x-3">
+                                <a href="{{ url_for('auth.servers_page') }}" 
+                                   class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-colors inline-block">
+                                    <i class="fas fa-server mr-2"></i>
+                                    Serwery IRC
+                                </a>
                                 <a href="{{ url_for('main.settings') }}" 
                                    class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-md transition-colors inline-block">
                                     <i class="fas fa-cog mr-2"></i>
@@ -254,19 +259,25 @@
             }
         });
         
+        socket.on('user_profile', function(data) {
+            if (data.success) {
+                currentUser = data.profile;
+                displayProfile(currentUser);
+                // Request current connections
+                socket.emit('get_connections');
+            } else {
+                showNoProfile();
+            }
+        });
+        
         socket.on('connections_list', function(data) {
             updateConnectionsStatus(data.connections);
         });
     }
     
     function loadUserProfile() {
-        if (currentUser) {
-            displayProfile(currentUser);
-            // Request current connections
-            socket.emit('get_connections');
-        } else {
-            showNoProfile();
-        }
+        // Zapytaj serwer o profil użytkownika
+        socket.emit('get_user_profile');
     }
     
     function showNoProfile() {

@@ -16,15 +16,31 @@ def register_socketio_handlers(socketio):
         """Obsługuje połączenie klienta"""
         session_id = request.sid
         logger.info(f"Klient połączony: {session_id}")
-        emit('status', {'connected': True, 'session_id': session_id})
+        
+        # Sprawdź czy użytkownik ma zapisaną sesję w bazie danych
+        user_data = irc_manager.get_user_profile_by_session(session_id)
+        if user_data:
+            # Przywróć połączenia IRC użytkownika
+            reconnected = irc_manager.reconnect_user_connections(session_id)
+            emit('status', {
+                'connected': True, 
+                'session_id': session_id,
+                'user': {
+                    'username': user_data.username,
+                    'nickname': user_data.preferred_nickname,
+                    'reconnected_connections': reconnected
+                }
+            })
+        else:
+            emit('status', {'connected': True, 'session_id': session_id})
     
     @socketio.on('disconnect')
     def handle_disconnect():
-        """Obsługuje rozłączenie klienta"""
+        """Obsługuje rozłączenie klienta - NIE usuwa profilu ani połączeń IRC"""
         session_id = request.sid
         logger.info(f"Klient rozłączony: {session_id}")
         
-        # Usuń profil użytkownika i rozłącz wszystkie połączenia IRC
+        # Usuń tylko sesję, ale zachowaj połączenia IRC (persistent connections)
         irc_manager.remove_user_profile(session_id)
     
     @socketio.on('register_user')
@@ -34,7 +50,7 @@ def register_socketio_handlers(socketio):
             session_id = request.sid
             
             # Walidacja danych
-            required_fields = ['username', 'email', 'preferred_nickname', 'preferred_ident', 'preferred_realname']
+            required_fields = ['username', 'preferred_nickname', 'preferred_ident', 'preferred_realname']
             for field in required_fields:
                 if field not in data or not data[field]:
                     emit('error', {'message': f'Pole {field} jest wymagane'})
@@ -43,7 +59,7 @@ def register_socketio_handlers(socketio):
             # Utworzenie profilu użytkownika
             profile = UserProfile(
                 username=data['username'],
-                email=data['email'],
+                email=data.get('email', ''),
                 preferred_nickname=data['preferred_nickname'],
                 preferred_ident=data['preferred_ident'],
                 preferred_realname=data['preferred_realname'],
@@ -52,16 +68,23 @@ def register_socketio_handlers(socketio):
                 preferences=data.get('preferences', {})
             )
             
-            # Dodanie profilu do menedżera
-            irc_manager.add_user_profile(session_id, profile)
+            # Zapisanie profilu do bazy danych i rejestracja sesji
+            user_id = irc_manager.save_user_profile(profile, session_id)
             
             emit('user_registered', {
                 'success': True,
+                'user_id': user_id,
                 'profile': {
                     'username': profile.username,
+                    'email': profile.email,
                     'nickname': profile.preferred_nickname,
                     'ident': profile.preferred_ident,
-                    'realname': profile.preferred_realname
+                    'realname': profile.preferred_realname,
+                    'preferred_nickname': profile.preferred_nickname,
+                    'preferred_ident': profile.preferred_ident,
+                    'preferred_realname': profile.preferred_realname,
+                    'auto_join_channels': profile.auto_join_channels,
+                    'preferences': profile.preferences
                 }
             })
             
@@ -349,6 +372,143 @@ def register_socketio_handlers(socketio):
         except Exception as e:
             logger.error(f"Błąd pobierania listy połączeń: {e}")
             emit('error', {'message': f'Błąd pobierania połączeń: {str(e)}'})
+    
+    @socketio.on('get_user_servers')
+    def handle_get_user_servers():
+        """Zwraca listę serwerów użytkownika"""
+        try:
+            session_id = request.sid
+            servers = irc_manager.get_user_servers(session_id)
+            emit('user_servers_list', {'servers': servers})
+            
+        except Exception as e:
+            logger.error(f"Błąd pobierania listy serwerów: {e}")
+            emit('error', {'message': f'Błąd pobierania serwerów: {str(e)}'})
+    
+    @socketio.on('save_user_server')
+    def handle_save_user_server(data):
+        """Zapisuje nowy serwer użytkownika"""
+        try:
+            session_id = request.sid
+            
+            # Walidacja danych
+            required_fields = ['name', 'host', 'port']
+            for field in required_fields:
+                if field not in data or not data[field]:
+                    emit('error', {'message': f'Pole {field} jest wymagane'})
+                    return
+            
+            # Utworzenie obiektu serwera
+            server = IRCServer(
+                name=data['name'],
+                host=data['host'],
+                port=int(data['port']),
+                ssl=data.get('ssl', False),
+                ipv6=data.get('ipv6', False),
+                encoding=data.get('encoding', 'utf-8')
+            )
+            
+            auto_connect = data.get('auto_connect', False)
+            server_id = irc_manager.save_user_server(session_id, server, auto_connect)
+            
+            emit('server_saved', {
+                'success': True,
+                'server_id': server_id,
+                'message': f'Serwer {server.name} został zapisany'
+            })
+            
+        except Exception as e:
+            logger.error(f"Błąd zapisywania serwera: {e}")
+            emit('error', {'message': f'Błąd zapisywania serwera: {str(e)}'})
+    
+    @socketio.on('update_user_server')
+    def handle_update_user_server(data):
+        """Aktualizuje serwer użytkownika"""
+        try:
+            session_id = request.sid
+            
+            # Walidacja danych
+            required_fields = ['server_id', 'name', 'host', 'port']
+            for field in required_fields:
+                if field not in data or data[field] is None:
+                    emit('error', {'message': f'Pole {field} jest wymagane'})
+                    return
+            
+            # Utworzenie obiektu serwera
+            server = IRCServer(
+                name=data['name'],
+                host=data['host'],
+                port=int(data['port']),
+                ssl=data.get('ssl', False),
+                ipv6=data.get('ipv6', False),
+                encoding=data.get('encoding', 'utf-8')
+            )
+            
+            auto_connect = data.get('auto_connect')
+            irc_manager.update_user_server(session_id, data['server_id'], server, auto_connect)
+            
+            emit('server_updated', {
+                'success': True,
+                'server_id': data['server_id'],
+                'message': f'Serwer {server.name} został zaktualizowany'
+            })
+            
+        except Exception as e:
+            logger.error(f"Błąd aktualizacji serwera: {e}")
+            emit('error', {'message': f'Błąd aktualizacji serwera: {str(e)}'})
+    
+    @socketio.on('delete_user_server')
+    def handle_delete_user_server(data):
+        """Usuwa serwer użytkownika"""
+        try:
+            session_id = request.sid
+            server_id = data.get('server_id')
+            
+            if not server_id:
+                emit('error', {'message': 'Brak ID serwera'})
+                return
+            
+            irc_manager.delete_user_server(session_id, server_id)
+            
+            emit('server_deleted', {
+                'success': True,
+                'server_id': server_id,
+                'message': 'Serwer został usunięty'
+            })
+            
+        except Exception as e:
+            logger.error(f"Błąd usuwania serwera: {e}")
+            emit('error', {'message': f'Błąd usuwania serwera: {str(e)}'})
+    
+    @socketio.on('get_user_profile')
+    def handle_get_user_profile():
+        """Zwraca profil aktualnego użytkownika"""
+        try:
+            session_id = request.sid
+            profile = irc_manager.get_user_profile_by_session(session_id)
+            
+            if profile:
+                emit('user_profile', {
+                    'success': True,
+                    'profile': {
+                        'username': profile.username,
+                        'email': profile.email,
+                        'nickname': profile.preferred_nickname,
+                        'ident': profile.preferred_ident,
+                        'realname': profile.preferred_realname,
+                        'preferred_nickname': profile.preferred_nickname,
+                        'preferred_ident': profile.preferred_ident,
+                        'preferred_realname': profile.preferred_realname,
+                        'auto_join_channels': profile.auto_join_channels,
+                        'preferences': profile.preferences
+                    }
+                })
+            else:
+                emit('user_profile', {'success': False, 'message': 'Brak profilu użytkownika'})
+                
+        except Exception as e:
+            logger.error(f"Błąd pobierania profilu: {e}")
+            emit('error', {'message': f'Błąd pobierania profilu: {str(e)}'})
     
     @socketio.on('get_connection_status')
     def handle_get_connection_status(data):

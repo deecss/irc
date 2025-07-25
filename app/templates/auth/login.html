@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}Logowanie - IRC Web Client{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-irc-dark via-irc-darker to-irc-blue py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md mx-auto">
+        <div class="text-center mb-8">
+            <h2 class="text-3xl font-extrabold text-white">
+                Zaloguj się do IRC
+            </h2>
+            <p class="mt-2 text-sm text-gray-400">
+                Wpisz swoją nazwę użytkownika aby kontynuować
+            </p>
+        </div>
+
+        <div class="bg-gray-800 shadow-xl rounded-lg p-8">
+            <form id="login-form" class="space-y-6">
+                <div>
+                    <label for="username" class="block text-sm font-medium text-gray-300 mb-2">
+                        Nazwa użytkownika
+                    </label>
+                    <input type="text" id="username" name="username" required
+                           placeholder="Wpisz swoją nazwę użytkownika"
+                           class="w-full bg-gray-700 border-gray-600 rounded-md text-white placeholder-gray-400 focus:border-irc-accent focus:ring-irc-accent">
+                    <p class="mt-1 text-xs text-gray-500">
+                        Nazwa użytkownika którą utworzyłeś przy rejestracji
+                    </p>
+                </div>
+                
+                <div class="flex space-x-3">
+                    <button type="submit" id="login-btn"
+                            class="flex-1 bg-irc-accent hover:bg-red-600 text-white font-medium py-3 px-4 rounded-md transition-colors">
+                        <i class="fas fa-sign-in-alt mr-2"></i>
+                        Zaloguj się
+                    </button>
+                </div>
+            </form>
+            
+            <div class="mt-6 text-center">
+                <p class="text-sm text-gray-400 mb-4">
+                    Nie masz jeszcze konta?
+                </p>
+                <a href="{{ url_for('auth.register_form') }}" 
+                   class="text-irc-accent hover:text-red-400 font-medium">
+                    Utwórz nowe konto
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        setupEventListeners();
+    });
+    
+    function setupEventListeners() {
+        document.getElementById('login-form').addEventListener('submit', handleLogin);
+        
+        // Socket events
+        socket.on('user_profile', function(data) {
+            if (data.success) {
+                showNotification('Zalogowano pomyślnie!', 'success');
+                setTimeout(() => {
+                    window.location.href = '{{ url_for("main.chat") }}';
+                }, 1500);
+            } else {
+                showNotification('Użytkownik nie znaleziony', 'error');
+            }
+        });
+    }
+    
+    async function handleLogin(e) {
+        e.preventDefault();
+        
+        const username = document.getElementById('username').value.trim();
+        
+        if (!username) {
+            showNotification('Wpisz nazwę użytkownika', 'warning');
+            return;
+        }
+        
+        try {
+            // Sprawdź czy użytkownik istnieje
+            const response = await fetch('/auth/api/check_user_exists', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username: username })
+            });
+            
+            const data = await response.json();
+            
+            if (data.exists) {
+                // Zaloguj użytkownika poprzez WebSocket
+                showNotification('Logowanie...', 'info');
+                
+                // Symuluj "logowanie" poprzez załadowanie profilu
+                socket.emit('get_user_profile');
+                
+                // Sprawdź odpowiedź
+                socket.once('user_profile', function(profileData) {
+                    if (profileData.success) {
+                        showNotification('Zalogowano pomyślnie!', 'success');
+                        setTimeout(() => {
+                            window.location.href = '{{ url_for("main.chat") }}';
+                        }, 1500);
+                    } else {
+                        // Spróbuj zarejestrować sesję z istniejącym użytkownikiem
+                        registerExistingUser(username);
+                    }
+                });
+                
+            } else {
+                showNotification('Użytkownik nie znaleziony. Przejdź do rejestracji.', 'error');
+                setTimeout(() => {
+                    window.location.href = '{{ url_for("auth.register_form") }}';
+                }, 2000);
+            }
+            
+        } catch (error) {
+            console.error('Błąd logowania:', error);
+            showNotification('Błąd podczas logowania', 'error');
+        }
+    }
+    
+    async function registerExistingUser(username) {
+        try {
+            // Pobierz dane użytkownika
+            const response = await fetch('/auth/api/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username: username })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Zarejestruj sesję z istniejącym profilem
+                const profileData = {
+                    username: data.user.username,
+                    email: data.user.email,
+                    preferred_nickname: data.user.preferred_nickname,
+                    preferred_ident: data.user.preferred_ident,
+                    preferred_realname: data.user.preferred_realname,
+                    auto_join_channels: [],
+                    preferences: {}
+                };
+                
+                socket.emit('register_user', profileData);
+                
+                socket.once('user_registered', function(regData) {
+                    if (regData.success) {
+                        showNotification('Zalogowano pomyślnie!', 'success');
+                        setTimeout(() => {
+                            window.location.href = '{{ url_for("main.chat") }}';
+                        }, 1500);
+                    } else {
+                        showNotification('Błąd podczas logowania', 'error');
+                    }
+                });
+                
+            } else {
+                showNotification(data.message, 'error');
+            }
+            
+        } catch (error) {
+            console.error('Błąd rejestracji sesji:', error);
+            showNotification('Błąd podczas logowania', 'error');
+        }
+    }
+</script>
+{% endblock %}

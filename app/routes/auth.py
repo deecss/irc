@@ -171,3 +171,67 @@ def get_default_profile():
             }
         }
     })
+
+@auth_bp.route('/api/login', methods=['POST'])
+def login_user():
+    """Loguje użytkownika po nazwie użytkownika"""
+    data = request.get_json()
+    
+    if not data or not data.get('username'):
+        return jsonify({
+            'success': False,
+            'message': 'Nazwa użytkownika jest wymagana'
+        }), 400
+    
+    username = data['username'].strip()
+    
+    # Import tutaj aby uniknąć circular imports
+    from app.services.database import db
+    
+    user_data = db.get_user_by_username(username)
+    
+    if not user_data:
+        return jsonify({
+            'success': False,
+            'message': 'Użytkownik nie znaleziony'
+        }), 404
+    
+    return jsonify({
+        'success': True,
+        'message': 'Użytkownik znaleziony',
+        'user': {
+            'username': user_data['username'],
+            'email': user_data['email'],
+            'preferred_nickname': user_data['preferred_nickname'],
+            'preferred_ident': user_data['preferred_ident'],
+            'preferred_realname': user_data['preferred_realname']
+        }
+    })
+
+@auth_bp.route('/api/check_user_exists', methods=['POST'])
+def check_user_exists():
+    """Sprawdza czy użytkownik istnieje"""
+    data = request.get_json()
+    
+    if not data or not data.get('username'):
+        return jsonify({
+            'success': False,
+            'message': 'Nazwa użytkownika jest wymagana'
+        }), 400
+    
+    username = data['username'].strip()
+    
+    # Import tutaj aby uniknąć circular imports
+    from app.services.database import db
+    
+    user_data = db.get_user_by_username(username)
+    
+    return jsonify({
+        'exists': user_data is not None,
+        'username': username
+    })
+
+@auth_bp.route('/servers')
+def servers_page():
+    """Strona zarządzania serwerami IRC"""
+    return render_template('auth/servers.html')
