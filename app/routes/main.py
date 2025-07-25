@@ -10,6 +10,8 @@ def index():
 @main_bp.route('/chat')
 def chat():
     """Interfejs czatu IRC"""
+    # Sprawdź czy użytkownik jest zalogowany (podstawowa implementacja)
+    # TODO: Dodać właściwą autoryzację sesji
     return render_template('chat.html')
 
 @main_bp.route('/settings')

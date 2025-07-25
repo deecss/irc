@@ -139,7 +139,7 @@ class IRCConnectionManager:
     
     def add_user_profile(self, session_id: str, profile: UserProfile):
         """Dodaje profil użytkownika (kompatybilność wsteczna)"""
-        self.save_user_profile(profile, session_id)
+        return self.save_user_profile(profile, session_id)
     
     def remove_user_profile(self, session_id: str):
         """Usuwa sesję użytkownika ale NIE rozłącza połączeń IRC (persistent connections)"""

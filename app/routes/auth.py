@@ -57,7 +57,7 @@ def register_form():
 @auth_bp.route('/login')
 def login_form():
     """Formularz logowania użytkownika"""
-    return render_template('auth/login_simple.html')
+    return render_template('auth/login.html')
 
 @auth_bp.route('/profile')
 def profile():

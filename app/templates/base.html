@@ -152,7 +152,7 @@
             <div class="flex justify-between items-center h-16">
                 <!-- Logo -->
                 <div class="flex items-center">
-                    <a href="{{ url_for('main.index') }}" class="flex items-center space-x-3">
+                    <a href="/" class="flex items-center space-x-3">
                         <div class="w-10 h-10 gradient-primary rounded-xl flex items-center justify-center floating">
                             <i class="fas fa-comments text-white text-xl"></i>
                         </div>
@@ -162,16 +162,16 @@
                 
                 <!-- Navigation links -->
                 <div class="hidden md:flex items-center space-x-6">
-                    <a href="{{ url_for('main.index') }}" class="text-white/80 hover:text-white transition-colors">
+                    <a href="/" class="text-white/80 hover:text-white transition-colors">
                         <i class="fas fa-home mr-2"></i>Główna
                     </a>
-                    <a href="{{ url_for('main.chat') }}" class="text-white/80 hover:text-white transition-colors">
+                    <a href="/chat" class="text-white/80 hover:text-white transition-colors">
                         <i class="fas fa-comments mr-2"></i>Chat
                     </a>
-                    <a href="{{ url_for('auth.profile') }}" class="text-white/80 hover:text-white transition-colors">
+                    <a href="/auth/profile" class="text-white/80 hover:text-white transition-colors">
                         <i class="fas fa-user mr-2"></i>Profil
                     </a>
-                    <a href="{{ url_for('auth.servers_page') }}" class="text-white/80 hover:text-white transition-colors">
+                    <a href="/auth/servers" class="text-white/80 hover:text-white transition-colors">
                         <i class="fas fa-server mr-2"></i>Serwery
                     </a>
                 </div>
@@ -185,10 +185,10 @@
                 
                 <!-- Auth buttons -->
                 <div class="hidden md:flex items-center space-x-4">
-                    <a href="{{ url_for('auth.login_form') }}" class="text-white/80 hover:text-white px-4 py-2 rounded-lg transition-colors">
+                    <a href="/auth/login" class="text-white/80 hover:text-white px-4 py-2 rounded-lg transition-colors">
                         Zaloguj się
                     </a>
-                    <a href="{{ url_for('auth.register_form') }}" class="btn-primary text-white px-6 py-2 rounded-lg font-medium">
+                    <a href="/auth/register" class="btn-primary text-white px-6 py-2 rounded-lg font-medium">
                         Załóż konto
                     </a>
                 </div>
@@ -198,23 +198,23 @@
         <!-- Mobile menu -->
         <div id="mobile-menu" class="hidden md:hidden glass border-t border-white/20">
             <div class="px-4 py-3 space-y-3">
-                <a href="{{ url_for('main.index') }}" class="block text-white/80 hover:text-white py-2">
+                <a href="/" class="block text-white/80 hover:text-white py-2">
                     <i class="fas fa-home mr-2"></i>Główna
                 </a>
-                <a href="{{ url_for('main.chat') }}" class="block text-white/80 hover:text-white py-2">
+                <a href="/chat" class="block text-white/80 hover:text-white py-2">
                     <i class="fas fa-comments mr-2"></i>Chat
                 </a>
-                <a href="{{ url_for('auth.profile') }}" class="block text-white/80 hover:text-white py-2">
+                <a href="/auth/profile" class="block text-white/80 hover:text-white py-2">
                     <i class="fas fa-user mr-2"></i>Profil
                 </a>
-                <a href="{{ url_for('auth.servers_page') }}" class="block text-white/80 hover:text-white py-2">
+                <a href="/auth/servers" class="block text-white/80 hover:text-white py-2">
                     <i class="fas fa-server mr-2"></i>Serwery
                 </a>
                 <div class="pt-3 border-t border-white/20">
-                    <a href="{{ url_for('auth.login_form') }}" class="block text-white/80 hover:text-white py-2">
+                    <a href="/auth/login" class="block text-white/80 hover:text-white py-2">
                         Zaloguj się
                     </a>
-                    <a href="{{ url_for('auth.register_form') }}" class="block btn-primary text-white px-6 py-2 rounded-lg font-medium mt-2 text-center">
+                    <a href="/auth/register" class="block btn-primary text-white px-6 py-2 rounded-lg font-medium mt-2 text-center">
                         Załóż konto
                     </a>
                 </div>
