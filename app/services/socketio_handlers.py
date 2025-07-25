@@ -92,6 +92,69 @@ def register_socketio_handlers(socketio):
             logger.error(f"Błąd rejestracji użytkownika: {e}")
             emit('error', {'message': f'Błąd rejestracji: {str(e)}'})
     
+    @socketio.on('login_user')
+    def handle_login_user(data):
+        """Loguje użytkownika"""
+        try:
+            from app.services.database import db
+            from app.routes.auth import verify_password
+            
+            session_id = request.sid
+            
+            # Walidacja danych
+            if not data.get('username') or not data.get('password'):
+                emit('login_error', {'message': 'Nazwa użytkownika i hasło są wymagane'})
+                return
+            
+            username = data['username'].strip()
+            password = data['password']
+            
+            # Sprawdź użytkownika w bazie
+            user_data = db.get_user_by_username(username)
+            
+            if not user_data:
+                emit('login_error', {'message': 'Nieprawidłowa nazwa użytkownika lub hasło'})
+                return
+            
+            # Weryfikuj hasło
+            if not verify_password(password, user_data['password_hash']):
+                emit('login_error', {'message': 'Nieprawidłowa nazwa użytkownika lub hasło'})
+                return
+            
+            # Aktualizuj ostatnie logowanie
+            db.update_last_login(user_data['username'])
+            
+            # Utwórz profil użytkownika w sesji
+            profile = UserProfile(
+                username=user_data['username'],
+                email=user_data.get('email', ''),
+                preferred_nickname=user_data['preferred_nickname'],
+                preferred_ident=user_data['preferred_ident'],
+                preferred_realname=user_data['preferred_realname'],
+                auto_join_channels=json.loads(user_data.get('auto_join_channels', '[]')),
+                preferences=json.loads(user_data.get('preferences', '{}'))
+            )
+            
+            # Zapisz profil w connection manager
+            irc_manager.add_user_profile(session_id, profile)
+            
+            emit('login_success', {
+                'success': True,
+                'message': 'Zalogowano pomyślnie',
+                'user': {
+                    'username': profile.username,
+                    'email': profile.email,
+                    'nickname': profile.preferred_nickname,
+                    'preferred_nickname': profile.preferred_nickname,
+                    'preferred_ident': profile.preferred_ident,
+                    'preferred_realname': profile.preferred_realname
+                }
+            })
+            
+        except Exception as e:
+            logger.error(f"Błąd logowania użytkownika: {e}")
+            emit('login_error', {'message': f'Błąd logowania: {str(e)}'})
+    
     @socketio.on('connect_to_server')
     def handle_connect_to_server(data):
         """Łączy z serwerem IRC"""

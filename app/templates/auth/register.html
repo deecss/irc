@@ -1,0 +1,439 @@
+{% extends "base.html" %}
+
+{% block title %}Rejestracja - IRC Web Client{% endblock %}
+
+{% block content %}
+<div class="min-h-screen py-12 px-4 sm:px-6 lg:px-8 fade-in">
+    <div class="max-w-2xl mx-auto">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <div class="w-20 h-20 gradient-accent rounded-2xl flex items-center justify-center mx-auto mb-6 floating">
+                <i class="fas fa-user-plus text-white text-3xl"></i>
+            </div>
+            <h2 class="text-4xl font-bold text-white mb-2">
+                Utwórz konto
+            </h2>
+            <p class="text-white/70 text-lg">
+                Skonfiguruj swój profil do połączeń z serwerami IRC
+            </p>
+        </div>
+
+        <!-- Registration Form -->
+        <div class="card rounded-2xl p-8">
+            <form id="registration-form" class="space-y-8">
+                <!-- Account Information -->
+                <div>
+                    <h3 class="text-xl font-semibold text-white mb-6 flex items-center">
+                        <i class="fas fa-user-circle mr-3 text-blue-400"></i>
+                        Informacje o koncie
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-2">
+                            <label for="username" class="block text-white font-medium">
+                                <i class="fas fa-user mr-2 text-blue-400"></i>
+                                Nazwa użytkownika <span class="text-red-400">*</span>
+                            </label>
+                            <input type="text" id="username" name="username" required
+                                   placeholder="twoja_nazwa"
+                                   class="input-modern w-full px-4 py-3 rounded-xl text-white placeholder-white/50 focus:outline-none">
+                            <p class="text-white/60 text-sm">
+                                Używana tylko w aplikacji (3-20 znaków)
+                            </p>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label for="email" class="block text-white font-medium">
+                                <i class="fas fa-envelope mr-2 text-green-400"></i>
+                                Email (opcjonalnie)
+                            </label>
+                            <input type="email" id="email" name="email"
+                                   placeholder="twoj@email.com"
+                                   class="input-modern w-full px-4 py-3 rounded-xl text-white placeholder-white/50 focus:outline-none">
+                            <p class="text-white/60 text-sm">
+                                Do powiadomień i odzyskiwania konta
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Password Section -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                        <div class="space-y-2">
+                            <label for="password" class="block text-white font-medium">
+                                <i class="fas fa-lock mr-2 text-purple-400"></i>
+                                Hasło <span class="text-red-400">*</span>
+                            </label>
+                            <div class="relative">
+                                <input type="password" id="password" name="password" required
+                                       placeholder="Wprowadź hasło"
+                                       class="input-modern w-full px-4 py-3 pr-12 rounded-xl text-white placeholder-white/50 focus:outline-none">
+                                <button type="button" id="toggle-password" 
+                                        class="absolute right-4 top-1/2 transform -translate-y-1/2 text-white/60 hover:text-white transition-colors">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <div id="password-strength" class="mt-2">
+                                <div class="flex space-x-1">
+                                    <div class="strength-bar bg-white/20 rounded-full"></div>
+                                    <div class="strength-bar bg-white/20 rounded-full"></div>
+                                    <div class="strength-bar bg-white/20 rounded-full"></div>
+                                    <div class="strength-bar bg-white/20 rounded-full"></div>
+                                </div>
+                                <p class="text-white/60 text-sm mt-1" id="password-strength-text">
+                                    Minimum 8 znaków
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label for="password_confirm" class="block text-white font-medium">
+                                <i class="fas fa-shield-alt mr-2 text-purple-400"></i>
+                                Potwierdź hasło <span class="text-red-400">*</span>
+                            </label>
+                            <div class="relative">
+                                <input type="password" id="password_confirm" name="password_confirm" required
+                                       placeholder="Potwierdź hasło"
+                                       class="input-modern w-full px-4 py-3 pr-12 rounded-xl text-white placeholder-white/50 focus:outline-none">
+                                <div id="password-match-icon" class="absolute right-4 top-1/2 transform -translate-y-1/2">
+                                    <!-- Icon will be added by JS -->
+                                </div>
+                            </div>
+                            <p class="text-white/60 text-sm">
+                                Wprowadź hasło ponownie
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- IRC Information -->
+                <div>
+                    <h3 class="text-xl font-semibold text-white mb-6 flex items-center">
+                        <i class="fas fa-id-card mr-3 text-yellow-400"></i>
+                        Dane IRC
+                    </h3>
+                    
+                    <div class="space-y-6">
+                        <div class="space-y-2">
+                            <label for="nickname" class="block text-white font-medium">
+                                <i class="fas fa-tag mr-2 text-yellow-400"></i>
+                                Nickname (nick) <span class="text-red-400">*</span>
+                            </label>
+                            <div class="relative">
+                                <input type="text" id="nickname" name="nickname" required
+                                       maxlength="30" placeholder="mojnick"
+                                       class="input-modern w-full px-4 py-3 pr-12 rounded-xl text-white placeholder-white/50 focus:outline-none">
+                                <div class="absolute right-4 top-1/2 transform -translate-y-1/2">
+                                    <i id="nickname-status" class="fas fa-question-circle text-white/40"></i>
+                                </div>
+                            </div>
+                            <p class="text-white/60 text-sm">
+                                Twoja nazwa widoczna na IRC (1-30 znaków, litery, cyfry, [], {}, \, |, ^, _, -)
+                            </p>
+                            <div id="nickname-feedback" class="text-sm"></div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="space-y-2">
+                                <label for="ident" class="block text-white font-medium">
+                                    <i class="fas fa-fingerprint mr-2 text-orange-400"></i>
+                                    Ident <span class="text-red-400">*</span>
+                                </label>
+                                <div class="flex">
+                                    <input type="text" id="ident" name="ident" required
+                                           maxlength="10" placeholder="uzytkownik"
+                                           class="input-modern flex-1 px-4 py-3 rounded-l-xl text-white placeholder-white/50 focus:outline-none">
+                                    <button type="button" id="suggest-ident" 
+                                            class="glass px-4 py-3 rounded-r-xl border-l border-white/20 hover:bg-white/10 text-white transition-colors">
+                                        <i class="fas fa-magic"></i>
+                                    </button>
+                                </div>
+                                <p class="text-white/60 text-sm">
+                                    Identyfikator użytkownika (1-10 znaków)
+                                </p>
+                                <div id="ident-feedback" class="text-sm"></div>
+                            </div>
+
+                            <div class="space-y-2">
+                                <label for="realname" class="block text-white font-medium">
+                                    <i class="fas fa-address-card mr-2 text-red-400"></i>
+                                    Nazwa rzeczywista <span class="text-red-400">*</span>
+                                </label>
+                                <input type="text" id="realname" name="realname" required
+                                       maxlength="50" placeholder="Jan Kowalski"
+                                       class="input-modern w-full px-4 py-3 rounded-xl text-white placeholder-white/50 focus:outline-none">
+                                <p class="text-white/60 text-sm">
+                                    Pełna nazwa (1-50 znaków)
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="pt-6">
+                    <button type="submit" id="register-btn"
+                            class="btn-accent w-full py-4 px-6 rounded-xl text-white font-semibold text-lg transition-all">
+                        <i class="fas fa-user-plus mr-2"></i>
+                        Utwórz konto
+                    </button>
+                </div>
+
+                <!-- Error/Success Messages -->
+                <div id="register-error" class="hidden card bg-red-600/20 border border-red-600/30 rounded-xl p-4">
+                    <div class="flex items-center">
+                        <i class="fas fa-exclamation-circle text-red-400 mr-3"></i>
+                        <span class="text-red-300" id="register-error-message"></span>
+                    </div>
+                </div>
+
+                <div id="register-success" class="hidden card bg-green-600/20 border border-green-600/30 rounded-xl p-4">
+                    <div class="flex items-center">
+                        <i class="fas fa-check-circle text-green-400 mr-3"></i>
+                        <span class="text-green-300" id="register-success-message"></span>
+                    </div>
+                </div>
+            </form>
+            
+            <!-- Login Link -->
+            <div class="mt-8 text-center">
+                <p class="text-white/70 mb-4">
+                    Masz już konto?
+                </p>
+                <a href="{{ url_for('auth.login_form') }}" 
+                   class="btn-primary inline-block px-8 py-3 rounded-xl text-white font-semibold transition-all">
+                    <i class="fas fa-sign-in-alt mr-2"></i>
+                    Zaloguj się
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<style>
+.strength-bar {
+    height: 4px;
+    flex: 1;
+    transition: background-color 0.3s ease;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const registrationForm = document.getElementById('registration-form');
+    const registerBtn = document.getElementById('register-btn');
+    const registerError = document.getElementById('register-error');
+    const registerSuccess = document.getElementById('register-success');
+    
+    // Password elements
+    const passwordInput = document.getElementById('password');
+    const passwordConfirmInput = document.getElementById('password_confirm');
+    const passwordToggle = document.getElementById('toggle-password');
+    const strengthBars = document.querySelectorAll('.strength-bar');
+    const strengthText = document.getElementById('password-strength-text');
+    const matchIcon = document.getElementById('password-match-icon');
+    
+    // IRC fields
+    const nicknameInput = document.getElementById('nickname');
+    const identInput = document.getElementById('ident');
+    const suggestIdentBtn = document.getElementById('suggest-ident');
+    
+    // Password visibility toggle
+    passwordToggle.addEventListener('click', function() {
+        const icon = this.querySelector('i');
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            passwordConfirmInput.type = 'text';
+            icon.className = 'fas fa-eye-slash';
+        } else {
+            passwordInput.type = 'password';
+            passwordConfirmInput.type = 'password';
+            icon.className = 'fas fa-eye';
+        }
+    });
+    
+    // Password strength checker
+    function checkPasswordStrength(password) {
+        let strength = 0;
+        let feedback = [];
+        
+        if (password.length >= 8) strength++;
+        else feedback.push('minimum 8 znaków');
+        
+        if (/[a-z]/.test(password)) strength++;
+        else feedback.push('mała litera');
+        
+        if (/[A-Z]/.test(password)) strength++;
+        else feedback.push('duża litera');
+        
+        if (/[0-9]/.test(password)) strength++;
+        else feedback.push('cyfra');
+        
+        // Update strength bars
+        strengthBars.forEach((bar, index) => {
+            if (index < strength) {
+                if (strength === 1) bar.style.backgroundColor = '#ef4444';
+                else if (strength === 2) bar.style.backgroundColor = '#f59e0b';
+                else if (strength === 3) bar.style.backgroundColor = '#3b82f6';
+                else bar.style.backgroundColor = '#10b981';
+            } else {
+                bar.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+            }
+        });
+        
+        // Update text
+        if (feedback.length === 0) {
+            strengthText.textContent = 'Silne hasło';
+            strengthText.className = 'text-green-400 text-sm mt-1';
+        } else {
+            strengthText.textContent = 'Potrzebne: ' + feedback.join(', ');
+            strengthText.className = 'text-white/60 text-sm mt-1';
+        }
+        
+        return strength;
+    }
+    
+    // Check password match
+    function checkPasswordMatch() {
+        const password = passwordInput.value;
+        const confirmPassword = passwordConfirmInput.value;
+        
+        if (confirmPassword === '') {
+            matchIcon.innerHTML = '';
+            return null;
+        }
+        
+        if (password === confirmPassword) {
+            matchIcon.innerHTML = '<i class="fas fa-check text-green-400"></i>';
+            return true;
+        } else {
+            matchIcon.innerHTML = '<i class="fas fa-times text-red-400"></i>';
+            return false;
+        }
+    }
+    
+    // Event listeners
+    passwordInput.addEventListener('input', function() {
+        checkPasswordStrength(this.value);
+        checkPasswordMatch();
+    });
+    
+    passwordConfirmInput.addEventListener('input', checkPasswordMatch);
+    
+    // Auto-suggest ident
+    suggestIdentBtn.addEventListener('click', function() {
+        const username = document.getElementById('username').value.trim();
+        if (username) {
+            identInput.value = username.substring(0, 10).toLowerCase().replace(/[^a-z0-9_-]/g, '');
+        }
+    });
+    
+    // Nickname validation
+    nicknameInput.addEventListener('input', function() {
+        const nickname = this.value;
+        const status = document.getElementById('nickname-status');
+        const feedback = document.getElementById('nickname-feedback');
+        
+        if (nickname === '') {
+            status.className = 'fas fa-question-circle text-white/40';
+            feedback.textContent = '';
+            return;
+        }
+        
+        if (/^[a-zA-Z\[\]{}\\|^_-][a-zA-Z0-9\[\]{}\\|^_-]{0,29}$/.test(nickname)) {
+            status.className = 'fas fa-check-circle text-green-400';
+            feedback.textContent = 'Prawidłowy nickname';
+            feedback.className = 'text-green-400 text-sm';
+        } else {
+            status.className = 'fas fa-times-circle text-red-400';
+            feedback.textContent = 'Nieprawidłowy format nickname';
+            feedback.className = 'text-red-400 text-sm';
+        }
+    });
+    
+    // Show error
+    function showError(message) {
+        const errorMessage = document.getElementById('register-error-message');
+        errorMessage.textContent = message;
+        registerError.classList.remove('hidden');
+        registerSuccess.classList.add('hidden');
+    }
+    
+    // Show success
+    function showSuccess(message) {
+        const successMessage = document.getElementById('register-success-message');
+        successMessage.textContent = message;
+        registerSuccess.classList.remove('hidden');
+        registerError.classList.add('hidden');
+    }
+    
+    // Form submission
+    registrationForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = {
+            username: document.getElementById('username').value.trim(),
+            email: document.getElementById('email').value.trim(),
+            password: passwordInput.value,
+            password_confirm: passwordConfirmInput.value,
+            preferred_nickname: nicknameInput.value.trim(),
+            preferred_ident: identInput.value.trim(),
+            preferred_realname: document.getElementById('realname').value.trim()
+        };
+        
+        // Validation
+        if (!formData.username || !formData.password || !formData.preferred_nickname || !formData.preferred_ident || !formData.preferred_realname) {
+            showError('Proszę wypełnić wszystkie wymagane pola');
+            return;
+        }
+        
+        if (formData.password !== formData.password_confirm) {
+            showError('Hasła muszą być identyczne');
+            return;
+        }
+        
+        if (checkPasswordStrength(formData.password) < 2) {
+            showError('Hasło jest zbyt słabe');
+            return;
+        }
+        
+        // Show loading
+        const originalText = registerBtn.innerHTML;
+        registerBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Tworzenie konta...';
+        registerBtn.disabled = true;
+        
+        // Emit registration event
+        socket.emit('register_user', formData);
+        
+        // Reset button after timeout
+        setTimeout(() => {
+            registerBtn.innerHTML = originalText;
+            registerBtn.disabled = false;
+        }, 5000);
+    });
+    
+    // Socket event handlers
+    socket.on('user_registered', function(data) {
+        if (data.success) {
+            showSuccess('Konto utworzone pomyślnie! Możesz się teraz zalogować.');
+            registerBtn.innerHTML = '<i class="fas fa-check mr-2"></i>Konto utworzone';
+            setTimeout(() => {
+                window.location.href = '/auth/login';
+            }, 2000);
+        } else {
+            registerBtn.innerHTML = '<i class="fas fa-user-plus mr-2"></i>Utwórz konto';
+            registerBtn.disabled = false;
+            showError(data.message || 'Błąd podczas tworzenia konta');
+        }
+    });
+    
+    socket.on('registration_error', function(data) {
+        registerBtn.innerHTML = '<i class="fas fa-user-plus mr-2"></i>Utwórz konto';
+        registerBtn.disabled = false;
+        showError(data.message || 'Błąd podczas tworzenia konta');
+    });
+});
+</script>
+{% endblock %}
